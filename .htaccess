@@ -1,0 +1,64 @@
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# CV Maker - URL Rewriting and Security
+
+AddType application/x-httpd-php .php .html
+AddHandler application/x-httpd-php .php .html
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Legacy page URL redirects
+    RewriteRule ^privacy-policy\.html$ /privacy.html [R=301,L]
+    RewriteRule ^terms-of-service\.html$ /terms.html [R=301,L]
+
+    # Public blog routes
+    RewriteRule ^blog\.html$ blog.php [QSA,L]
+    RewriteRule ^blog/([^/]+)\.html$ blog.php?slug=$1 [QSA,L]
+
+    # DB-backed static pages
+    RewriteRule ^(privacy|terms|about|help-center|faqs)\.html$ page.php?slug=$1 [QSA,L]
+
+    # Redirect .html requests to clean URLs (optional)
+    # RewriteCond %{THE_REQUEST} \.html
+    # RewriteRule ^(.+)\.html$ /$1 [R=301,L]
+
+    # Serve .html files without extension
+    RewriteCond %{REQUEST_FILENAME}.html -f
+    RewriteRule ^([^/]+)$ $1.html [L]
+
+    # API requests - don't rewrite
+    RewriteCond %{REQUEST_URI} ^/api/
+    RewriteRule .* - [L]
+
+    # Handle SPA routes - serve index.html for React Router
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ /index.html [L]
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Enable CORS for API
+<IfModule mod_headers.c>
+    <FilesMatch "^api/">
+        Header set Access-Control-Allow-Origin "*"
+        Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+    </FilesMatch>
+</IfModule>
+
+# Disable directory browsing
+Options -Indexes
+
+# PHP settings (if needed)
+php_value upload_max_filesize 10M
+php_value post_max_size 10M

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up - cvmaker.ink</title>
+  <meta name="description" content="Create your free CVMaker.ink account to build, customize, and download professional resumes with modern templates and smart editing tools.">
+  <meta property="og:title" content="Sign Up - cvmaker.ink">
+  <meta property="og:description" content="Create your free CVMaker.ink account to build, customize, and download professional resumes with modern templates and smart editing tools.">
+  <meta property="og:image" content="https://cvmaker.ink/assets/og-default.jpg">
+  <meta property="og:url" content="https://cvmaker.ink/register.html">
+  <link rel="canonical" href="https://cvmaker.ink/register.html">
+    <!-- Tracking Code Loader -->
+    <script src="/assets/js/tracking-loader.js"></script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .error { background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+    .success { background: #dcfce7; color: #16a34a; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+  </style>
+  <script src="/branding.js"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <a href="/" class="inline-flex items-center justify-center">
+        <img src="/uploads/branding/cvmaker-logo-20260515.svg" alt="cvmaker.ink" class="w-full max-w-[380px] h-auto object-contain mx-auto" />
+      </a>
+      <p class="text-gray-600 mt-2">Create your free account</p>
+    </div>
+
+    <!-- Messages -->
+    <div id="message"></div>
+
+    <!-- Form -->
+    <form id="registerForm" class="space-y-4" method="post" action="javascript:void(0);">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+          <input type="text" name="first_name" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+          <input type="text" name="last_name" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+        <input type="email" name="email" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+        <input type="password" name="password" required minlength="8" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <p class="text-xs text-gray-500 mt-1">Must be at least 8 characters</p>
+      </div>
+
+      <div class="flex items-start">
+        <input type="checkbox" required id="terms" class="mt-1 rounded border-gray-300 text-blue-600">
+        <label for="terms" class="ml-2 text-sm text-gray-600">I agree to the <a href="/terms.html" class="text-blue-600">Terms</a> and <a href="/privacy.html" class="text-blue-600">Privacy Policy</a></label>
+      </div>
+
+      <div class="flex items-start">
+        <input type="checkbox" id="newsletter_opt_in" class="mt-1 rounded border-gray-300 text-blue-600">
+        <label for="newsletter_opt_in" class="ml-2 text-sm text-gray-600">Subscribe me to the newsletter for resume tips and product updates</label>
+      </div>
+
+      <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+        Create Free Account
+      </button>
+    </form>
+
+    <div class="mt-6 text-center">
+      <p class="text-gray-600">Already have an account? <a href="/login.html" class="text-blue-600 font-medium">Sign in</a></p>
+    </div>
+  </div>
+
+  <script>
+    const registerForm = document.getElementById('registerForm');
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const btn = document.getElementById('submitBtn');
+      const msgDiv = document.getElementById('message');
+
+      btn.textContent = 'Creating account...';
+      btn.disabled = true;
+      msgDiv.innerHTML = '';
+
+      const formData = new FormData(registerForm);
+      const data = {
+        first_name: formData.get('first_name'),
+        last_name: formData.get('last_name'),
+        email: formData.get('email'),
+        password: formData.get('password')
+      };
+      const newsletterOptIn = document.getElementById('newsletter_opt_in').checked;
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        const rawText = await response.text();
+        let result = {};
+        try {
+          result = rawText ? JSON.parse(rawText) : {};
+        } catch (parseErr) {
+          console.error('Registration response was not valid JSON:', rawText);
+          throw new Error('Unexpected server response');
+        }
+
+        if (response.ok) {
+          if (newsletterOptIn) {
+            try {
+              await fetch('/api/newsletter/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ email: data.email, first_name: data.first_name })
+              });
+            } catch (newsletterErr) {
+              console.warn('Newsletter subscribe failed after registration', newsletterErr);
+            }
+          }
+
+          registerForm.classList.add('hidden');
+          msgDiv.innerHTML = `
+            <div class="success">
+              <h3 class="font-bold text-lg mb-2"><i class="fas fa-check-circle mr-2"></i>Account Created!</h3>
+              <p>We've sent a verification email to <strong>${data.email}</strong>.</p>
+              <p class="mt-2">Please check your inbox and click the verification link to activate your account.</p>
+            </div>
+            <p class="text-sm text-gray-500 mt-3">Didn't receive the email? Check your spam folder or <a href="/login.html" class="text-blue-600 hover:text-blue-700">try signing in</a> to resend.</p>
+          `;
+        } else {
+          msgDiv.innerHTML = `<div class="error">❌ ${result.error || 'Registration failed'}</div>`;
+          btn.textContent = 'Create Free Account';
+          btn.disabled = false;
+        }
+      } catch (err) {
+        console.error('Registration error:', err);
+        msgDiv.innerHTML = `<div class="error">❌ ${err.message || 'Network error. Please try again.'}</div>`;
+        btn.textContent = 'Create Free Account';
+        btn.disabled = false;
+      }
+
+      return false;
+    });
+  </script>
+</body>
+</html>

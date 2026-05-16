@@ -1,0 +1,10 @@
+RewriteEngine On
+
+# Pass Authorization header to PHP (required for OpenLiteSpeed / CGI)
+RewriteCond %{HTTP:Authorization} ^(.+)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1,E=REDIRECT_HTTP_AUTHORIZATION:%1]
+
+# Send every /api/* request to index.php while preserving the path info
+RewriteRule ^ index.php [QSA,L]
+
+Options -Indexes

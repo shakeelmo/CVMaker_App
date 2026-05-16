@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your Email - cvmaker.ink</title>
+  <meta name="description" content="Verify your email address to activate your CVMaker.ink account.">
+  <meta name="robots" content="noindex, nofollow">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .error { background: #fee2e2; color: #dc2626; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+    .success { background: #dcfce7; color: #16a34a; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+    .info { background: #dbeafe; color: #1d4ed8; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+    .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+  <script src="/branding.js"></script>
+  <script src="/assets/js/tracking-loader.js"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <a href="/" class="inline-flex items-center justify-center">
+        <img src="/uploads/branding/cvmaker-logo-20260515.svg" alt="cvmaker.ink" class="w-full max-w-[380px] h-auto object-contain mx-auto" />
+      </a>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="text-center">
+      <div class="spinner mb-4"></div>
+      <p class="text-gray-600">Verifying your email address...</p>
+    </div>
+
+    <!-- Result -->
+    <div id="result" class="hidden">
+      <div id="message"></div>
+    </div>
+  </div>
+
+  <script>
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+
+      if (!token) {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('result').classList.remove('hidden');
+        document.getElementById('message').innerHTML = `
+          <div class="error">
+            <h3 class="font-bold text-lg mb-2"><i class="fas fa-exclamation-circle mr-2"></i>Invalid Link</h3>
+            <p>This verification link is invalid. Please check your email for the correct link or request a new one.</p>
+          </div>
+          <a href="/login.html" class="block text-center text-blue-600 font-medium mt-4">Go to Sign In</a>
+        `;
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/auth/verify-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: token })
+        });
+
+        const result = await response.json();
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('result').classList.remove('hidden');
+
+        if (response.ok) {
+          document.getElementById('message').innerHTML = `
+            <div class="success">
+              <h3 class="font-bold text-lg mb-2"><i class="fas fa-check-circle mr-2"></i>Email Verified!</h3>
+              <p>Your email has been verified successfully. You can now sign in to your account.</p>
+            </div>
+            <a href="/login.html" class="block w-full bg-blue-600 text-white text-center py-3 rounded-lg font-semibold hover:bg-blue-700 transition mt-4">Sign In Now</a>
+          `;
+        } else {
+          let errorMsg = result.error || 'Verification failed';
+          let resendHtml = '';
+
+          if (result.can_resend) {
+            resendHtml = `
+              <div class="mt-4 text-center">
+                <p class="text-gray-600 mb-2">Need a new verification link?</p>
+                <form id="resendForm" class="inline">
+                  <input type="email" id="resendEmail" placeholder="Enter your email" required
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mr-2">
+                  <button type="submit" id="resendBtn"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition">
+                    Resend Verification
+                  </button>
+                </form>
+                <div id="resendMessage" class="mt-2"></div>
+              </div>
+            `;
+          }
+
+          document.getElementById('message').innerHTML = `
+            <div class="error">
+              <h3 class="font-bold text-lg mb-2"><i class="fas fa-exclamation-circle mr-2"></i>Verification Failed</h3>
+              <p>${errorMsg}</p>
+            </div>
+            <a href="/login.html" class="block text-center text-blue-600 font-medium mt-4">Go to Sign In</a>
+            ${resendHtml}
+          `;
+
+          if (result.can_resend) {
+            document.getElementById('resendForm').addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const email = document.getElementById('resendEmail').value;
+              const resendBtn = document.getElementById('resendBtn');
+              const resendMsg = document.getElementById('resendMessage');
+
+              resendBtn.textContent = 'Sending...';
+              resendBtn.disabled = true;
+
+              try {
+                const res = await fetch('/api/auth/resend-verification', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: email })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                  resendMsg.innerHTML = '<div class="success text-sm" style="padding:8px;border-radius:6px;">✅ Verification email sent! Check your inbox.</div>';
+                } else {
+                  resendMsg.innerHTML = `<div class="error text-sm" style="padding:8px;border-radius:6px;">❌ ${data.error || 'Failed to resend'}</div>`;
+                  resendBtn.textContent = 'Resend Verification';
+                  resendBtn.disabled = false;
+                }
+              } catch (err) {
+                resendMsg.innerHTML = '<div class="error text-sm" style="padding:8px;border-radius:6px;">❌ Network error. Please try again.</div>';
+                resendBtn.textContent = 'Resend Verification';
+                resendBtn.disabled = false;
+              }
+            });
+          }
+        }
+      } catch (err) {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('result').classList.remove('hidden');
+        document.getElementById('message').innerHTML = `
+          <div class="error">
+            <h3 class="font-bold text-lg mb-2"><i class="fas fa-exclamation-circle mr-2"></i>Connection Error</h3>
+            <p>Could not reach the server. Please check your internet connection and try again.</p>
+          </div>
+          <button onclick="location.reload()" class="block w-full bg-gray-100 text-gray-700 text-center py-3 rounded-lg font-semibold hover:bg-gray-200 transition mt-4">Try Again</button>
+        `;
+      }
+    })();
+  </script>
+</body>
+</html>

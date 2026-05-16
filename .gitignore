@@ -1,0 +1,26 @@
+.DS_Store
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+config/install.lock
+config/*.local.php
+
+# Dependencies
+vendor/
+node_modules/
+
+# Runtime/generated data
+logs/
+exports/
+uploads/photos/
+*.log
+
+# Server/editor backups
+*.bak
+*.bak-*
+*.bak_*
+
+# Debug/source maps from production builds
+*.map

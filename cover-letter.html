@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cover Letter Builder - cvmaker.ink</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .letter-container {
+      width: 216mm;
+      min-height: 279mm;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      padding: 25mm;
+    }
+    @media print {
+      body { background: white; }
+      .no-print { display: none !important; }
+      .letter-container { box-shadow: none; margin: 0; width: 100%; padding: 20mm; }
+    }
+  </style>
+  <script src="/assets/js/tracking-loader.js"></script>
+</head>
+<body class="bg-gray-100">
+  <div class="no-print fixed top-0 left-0 right-0 bg-white shadow-md z-50 px-6 py-4">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <a href="/dashboard.html" class="text-gray-600 hover:text-gray-900">
+          <i class="fas fa-arrow-left"></i> Back
+        </a>
+        <h1 class="text-xl font-bold">Cover Letter Builder</h1>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="loadFromResume()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+          <i class="fas fa-magic mr-2"></i>Load from Resume
+        </button>
+        <button onclick="generateAI()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+          <i class="fas fa-robot mr-2"></i>AI Generate
+        </button>
+        <button onclick="downloadPDF()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+          <i class="fas fa-download mr-2"></i>Download PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-24 pb-10 px-4">
+    <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8">
+      <!-- Editor -->
+      <div class="space-y-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 class="text-lg font-semibold mb-4">Your Information</h2>
+          <div class="space-y-3">
+            <input type="text" id="yourName" class="w-full px-4 py-2 border rounded-lg" placeholder="Your Full Name">
+            <input type="text" id="yourAddress" class="w-full px-4 py-2 border rounded-lg" placeholder="Your Address">
+            <div class="grid grid-cols-2 gap-3">
+              <input type="text" id="yourCity" class="w-full px-4 py-2 border rounded-lg" placeholder="City, State, ZIP">
+              <input type="text" id="yourEmail" class="w-full px-4 py-2 border rounded-lg" placeholder="Email">
+            </div>
+            <input type="text" id="yourPhone" class="w-full px-4 py-2 border rounded-lg" placeholder="Phone">
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 class="text-lg font-semibold mb-4">Employer Information</h2>
+          <div class="space-y-3">
+            <input type="text" id="employerName" class="w-full px-4 py-2 border rounded-lg" placeholder="Hiring Manager Name (or 'Hiring Manager')">
+            <input type="text" id="companyName" class="w-full px-4 py-2 border rounded-lg" placeholder="Company Name">
+            <input type="text" id="companyAddress" class="w-full px-4 py-2 border rounded-lg" placeholder="Company Address">
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 class="text-lg font-semibold mb-4">Letter Content</h2>
+          <div class="space-y-3">
+            <input type="text" id="jobTitle" class="w-full px-4 py-2 border rounded-lg" placeholder="Job Title You're Applying For">
+            <textarea id="opening" rows="2" class="w-full px-4 py-2 border rounded-lg" placeholder="Opening Paragraph - Hook them with your enthusiasm..."></textarea>
+            <textarea id="body" rows="6" class="w-full px-4 py-2 border rounded-lg" placeholder="Body Paragraphs - Highlight 2-3 key achievements relevant to the job..."></textarea>
+            <textarea id="closing" rows="2" class="w-full px-4 py-2 border rounded-lg" placeholder="Closing - Call to action and gratitude..."></textarea>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Preview -->
+      <div class="lg:sticky lg:top-24">
+        <div id="letter" class="letter-container">
+          <div class="text-sm text-gray-600 mb-8">
+            <div id="previewYourInfo">
+              <div class="font-semibold"></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+            </div>
+            
+            <div class="mt-6" id="previewDate"></div>
+            
+            <div class="mt-6" id="previewEmployerInfo">
+              <div></div>
+              <div class="font-semibold"></div>
+              <div></div>
+            </div>
+          </div>
+          
+          <div class="mt-8 space-y-4 text-justify">
+            <div>Dear <span id="previewSalutation">Hiring Manager</span>,</div>
+            <div id="previewOpening" class="leading-relaxed"></div>
+            <div id="previewBody" class="leading-relaxed"></div>
+            <div id="previewClosing" class="leading-relaxed"></div>
+            <div class="mt-8">
+              <div>Sincerely,</div>
+              <div class="mt-8" id="previewSignature"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Auto-update preview
+    const fields = ['yourName', 'yourAddress', 'yourCity', 'yourEmail', 'yourPhone', 
+                    'employerName', 'companyName', 'companyAddress', 
+                    'jobTitle', 'opening', 'body', 'closing'];
+    
+    fields.forEach(id => {
+      document.getElementById(id)?.addEventListener('input', updatePreview);
+    });
+    
+    function updatePreview() {
+      const data = {};
+      fields.forEach(id => {
+        data[id] = document.getElementById(id)?.value || '';
+      });
+      
+      // Update preview
+      const yourInfo = document.getElementById('previewYourInfo');
+      yourInfo.innerHTML = `
+        ${data.yourName ? `<div class="font-semibold">${data.yourName}</div>` : ''}
+        ${data.yourAddress ? `<div>${data.yourAddress}</div>` : ''}
+        ${data.yourCity ? `<div>${data.yourCity}</div>` : ''}
+        ${data.yourEmail ? `<div>${data.yourEmail}</div>` : ''}
+        ${data.yourPhone ? `<div>${data.yourPhone}</div>` : ''}
+      `;
+      
+      document.getElementById('previewDate').textContent = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', month: 'long', day: 'numeric' 
+      });
+      
+      const empInfo = document.getElementById('previewEmployerInfo');
+      empInfo.innerHTML = `
+        ${data.employerName ? `<div>${data.employerName}</div>` : '<div>Hiring Manager</div>'}
+        ${data.companyName ? `<div class="font-semibold">${data.companyName}</div>` : ''}
+        ${data.companyAddress ? `<div>${data.companyAddress}</div>` : ''}
+      `;
+      
+      document.getElementById('previewSalutation').textContent = data.employerName || 'Hiring Manager';
+      document.getElementById('previewOpening').innerHTML = data.opening ? `<p>${data.opening}</p>` : '<p class="text-gray-400 italic">Your opening paragraph will appear here...</p>';
+      document.getElementById('previewBody').innerHTML = data.body ? `<p>${data.body}</p>` : '<p class="text-gray-400 italic">Your body paragraphs will appear here...</p>';
+      document.getElementById('previewClosing').innerHTML = data.closing ? `<p>${data.closing}</p>` : '<p class="text-gray-400 italic">Your closing paragraph will appear here...</p>';
+      document.getElementById('previewSignature').textContent = data.yourName;
+    }
+    
+    function loadFromResume() {
+      // Fetch resume data and pre-fill
+      const token = localStorage.getItem('token');
+      
+      // Get first resume from dashboard
+      fetch('/api/resumes', { headers: { 'Authorization': `Bearer ${token}` }})
+        .then(r => r.json())
+        .then(data => {
+          if (data.resumes?.length > 0) {
+            return fetch(`/api/resumes/${data.resumes[0].id}`, { 
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+          }
+          throw new Error('No resumes found');
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.resume) {
+            const content = typeof data.resume.content === 'string' 
+              ? JSON.parse(data.resume.content) 
+              : data.resume.content;
+            
+            if (content.basics) {
+              document.getElementById('yourName').value = content.basics.name || '';
+              document.getElementById('yourEmail').value = content.basics.email || '';
+              document.getElementById('yourPhone').value = content.basics.phone || '';
+              document.getElementById('yourCity').value = content.basics.location || '';
+            }
+            updatePreview();
+          }
+        })
+        .catch(err => alert('Please create a resume first'));
+    }
+    
+    function generateAI() {
+      const jobTitle = document.getElementById('jobTitle').value;
+      const company = document.getElementById('companyName').value;
+      
+      if (!jobTitle || !company) {
+        alert('Please enter job title and company name first');
+        return;
+      }
+      
+      // AI-generated content templates
+      const opening = `I am writing to express my strong interest in the ${jobTitle} position at ${company}. With my background and passion for excellence, I am confident that I would be a valuable addition to your team.`;
+      
+      const body = `Throughout my career, I have developed a strong foundation in key areas relevant to this role. My experience has taught me the importance of attention to detail, effective communication, and delivering results. I am particularly drawn to ${company} because of its reputation for innovation and excellence.
+
+In my previous roles, I have consistently demonstrated the ability to adapt quickly, collaborate effectively with cross-functional teams, and drive projects to successful completion. I am eager to bring these skills to ${company} and contribute to your continued success.`;
+      
+      const closing = `I would welcome the opportunity to discuss how my background and skills align with the needs of your team. Thank you for considering my application. I look forward to the possibility of contributing to ${company}'s continued growth and success.`;
+      
+      document.getElementById('opening').value = opening;
+      document.getElementById('body').value = body;
+      document.getElementById('closing').value = closing;
+      updatePreview();
+    }
+    
+    function downloadPDF() {
+      const element = document.getElementById('letter');
+      const opt = {
+        margin: 0,
+        filename: `cover_letter_${new Date().getTime()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+      };
+      
+      html2pdf().set(opt).from(element).save();
+    }
+    
+    // Initialize
+    updatePreview();
+  </script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify Your CV Maker Account</title>
+<style>
+  body, html { margin: 0; padding: 0; width: 100%; height: 100%; }
+  body { background-color: #f4f5f7; font-family: 'Segoe UI', Arial, Helvetica, sans-serif; line-height: 1.6; color: #2d3748; }
+  .email-wrapper { width: 100%; background-color: #f4f5f7; padding: 40px 0; }
+  .email-container { max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 36px 40px; text-align: center; }
+  .header h1 { margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: -0.3px; }
+  .brand-wordmark { display: inline-block; color: #ffffff; font-size: 28px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 10px; }
+  .content { padding: 36px 40px; }
+  .content p { margin: 0 0 16px; font-size: 15px; color: #4a5568; }
+  .content p.greeting { font-size: 16px; font-weight: 600; color: #2d3748; }
+  .cta-button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff !important; text-decoration: none; padding: 15px 36px; border-radius: 8px; font-size: 16px; font-weight: 700; letter-spacing: 0.3px; margin: 20px 0; text-align: center; }
+  .cta-button:hover { opacity: 0.92; }
+  .fallback-link { word-break: break-all; color: #667eea; font-size: 13px; }
+  .notice-box { background: #fef9e7; border-left: 4px solid #f0c040; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 20px 0; font-size: 14px; color: #7c6a1a; }
+  .notice-box strong { color: #5a4a0e; }
+  .footer { background-color: #f8f9fb; padding: 24px 40px; text-align: center; border-top: 1px solid #e8ecf1; }
+  .footer p { margin: 0; font-size: 12px; color: #a0aec0; }
+  .footer a { color: #667eea; text-decoration: none; }
+  @media only screen and (max-width: 580px) {
+    .email-container { margin: 0 12px; }
+    .header, .content, .footer { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="email-wrapper">
+  <div class="email-container">
+    <div class="header">
+      <div class="brand-wordmark">CV Maker</div>
+      <h1>Verify Your Email Address</h1>
+    </div>
+    <div class="content">
+      <p class="greeting">Hello {{FIRST_NAME}},</p>
+      <p>Thank you for creating your account on <strong>CV Maker</strong>! To get started building your professional resume, please verify your email address by clicking the button below.</p>
+      <div style="text-align: center;">
+        <a href="{{VERIFY_URL}}" class="cta-button">Verify My Email</a>
+      </div>
+      <p style="font-size: 14px; color: #718096;">If the button doesn't work, copy and paste this link into your browser:</p>
+      <p class="fallback-link">{{VERIFY_URL}}</p>
+      <div class="notice-box">
+        <strong>Expires in 24 hours</strong> — This verification link will expire after 24 hours for security. If it expires, you can request a new one from the login page.
+      </div>
+      <p style="font-size: 13px; color: #a0aec0; margin-top: 8px;">If you did not create an account on CV Maker, you can safely ignore this email.</p>
+    </div>
+    <div class="footer">
+      <p>&copy; {{YEAR}} CV Maker — Build professional resumes, fast.</p>
+      <p><a href="https://cvmaker.ink">cvmaker.ink</a></p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - cvmaker.ink</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .spinner { border: 3px solid #e5e7eb; border-top: 3px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .glass-card { box-shadow: 0 18px 40px rgba(15, 23, 42, 0.07); }
+  </style>
+  <script src="/branding.js"></script>
+  <script src="/assets/js/tracking-loader.js"></script>
+</head>
+<body class="bg-slate-50">
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <header class="bg-white/95 backdrop-blur border-b border-slate-200 sticky top-0 z-20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4 sm:h-16 sm:py-0">
+          <a href="/" class="flex items-center space-x-2">
+            <img src="/uploads/branding/cvmaker-logo-20260515.svg" alt="cvmaker.ink" class="h-16 w-auto max-w-[320px] object-contain" />
+          </a>
+
+          <div class="flex items-center flex-wrap gap-3">
+            <span id="userName" class="text-sm text-slate-600">Welcome!</span>
+            <button onclick="openImportModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-emerald-700 transition">
+              <i class="fas fa-upload mr-2"></i>Import Resume
+            </button>
+            <a href="/templates.html" id="headerNewResumeBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition">
+              <i class="fas fa-plus mr-2"></i>New Resume
+            </a>
+            <button onclick="logout()" class="text-slate-500 hover:text-slate-900 px-2 py-2">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="upgradeBanner" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+      <div class="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 glass-card">
+        <div class="flex items-start gap-4">
+          <i class="fas fa-crown text-2xl text-amber-500 mt-1"></i>
+          <div>
+            <p class="font-semibold text-slate-900" id="bannerTitle">Free Plan, 1 Resume Limit</p>
+            <p class="text-sm text-slate-600" id="bannerSubtitle">Upgrade to Pro for unlimited resumes, premium templates, and AI features.</p>
+          </div>
+        </div>
+        <a href="/upgrade.html" class="shrink-0 bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-semibold transition shadow-sm">
+          <i class="fas fa-crown mr-2"></i>Upgrade to Pro
+        </a>
+      </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <section class="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 rounded-3xl text-white p-6 md:p-8 glass-card">
+        <div class="grid lg:grid-cols-[1.2fr_0.8fr] gap-8 items-start">
+          <div>
+            <span id="planBadge" class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 text-blue-100 text-sm font-semibold mb-4">Free Plan</span>
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">Welcome back, <span id="heroUserName">there</span></h1>
+            <p id="heroSubtitle" class="text-blue-100 max-w-2xl text-base md:text-lg">Manage your resumes, continue editing your latest version, and keep your job search moving.</p>
+            <div id="subscriptionMeta" class="mt-4 text-sm text-blue-100"></div>
+          </div>
+          <div class="bg-white/10 rounded-2xl border border-white/10 p-5">
+            <h2 class="text-lg font-semibold mb-4">Quick Actions</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <a href="/templates.html" id="quickCreateBtn" class="inline-flex items-center justify-center px-4 py-3 rounded-xl bg-white text-slate-900 font-semibold hover:bg-slate-100 transition">
+                <i class="fas fa-plus mr-2"></i>Create Resume
+              </a>
+              <button onclick="openImportModal()" class="inline-flex items-center justify-center px-4 py-3 rounded-xl bg-emerald-500/20 border border-emerald-300/20 text-white font-semibold hover:bg-emerald-500/30 transition">
+                <i class="fas fa-upload mr-2"></i>Import Resume
+              </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <a href="/templates.html" class="inline-flex items-center justify-center px-4 py-3 rounded-xl bg-blue-500/20 border border-blue-300/20 text-white font-semibold hover:bg-blue-500/30 transition">
+                <i class="fas fa-palette mr-2"></i>Browse Templates
+              </a>
+              <button id="quickContinueBtn" onclick="continueLatestResume()" class="inline-flex items-center justify-center px-4 py-3 rounded-xl bg-blue-500/20 border border-blue-300/20 text-white font-semibold hover:bg-blue-500/30 transition" disabled>
+                <i class="fas fa-pen mr-2"></i>Continue Latest
+              </button>
+              <a href="/upgrade.html" id="quickUpgradeBtn" class="hidden inline-flex items-center justify-center px-4 py-3 rounded-xl bg-amber-400 text-slate-900 font-semibold hover:bg-amber-300 transition">
+                <i class="fas fa-crown mr-2"></i>Upgrade to Pro
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6" id="stats">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 glass-card">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl"><i class="fas fa-file-alt"></i></div>
+            <div>
+              <p class="text-sm text-slate-500">Total Resumes</p>
+              <p class="text-2xl font-bold text-slate-900" id="resumeCount">0</p>
+              <p class="text-xs text-slate-400 mt-1" id="resumeLimit"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 glass-card">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-xl"><i class="fas fa-download"></i></div>
+            <div>
+              <p class="text-sm text-slate-500">PDF Downloads</p>
+              <p class="text-2xl font-bold text-slate-900" id="downloadCount">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 glass-card">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl"><i class="fas fa-eye"></i></div>
+            <div>
+              <p class="text-sm text-slate-500">Resume Views</p>
+              <p class="text-2xl font-bold text-slate-900" id="viewCount">0</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 glass-card">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl"><i class="fas fa-star"></i></div>
+            <div>
+              <p class="text-sm text-slate-500">Current Plan</p>
+              <p class="text-2xl font-bold text-slate-900" id="userPlan">Free</p>
+              <a href="/upgrade.html" id="upgradeLink" class="hidden mt-1 inline-block text-sm font-semibold text-blue-600 hover:text-blue-700 transition">
+                <i class="fas fa-crown mr-1"></i>Upgrade to Pro
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 glass-card">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-2xl font-bold text-slate-900">Your Resumes</h2>
+            <p class="text-slate-500 text-sm mt-1">Open, manage, import, and continue working on your saved resumes.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button onclick="openImportModal()" class="inline-flex items-center px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition">
+              <i class="fas fa-upload mr-2"></i>Import Resume
+            </button>
+            <a href="/templates.html" id="newResumeBtn" class="text-blue-600 hover:text-blue-700 font-semibold">Browse Templates →</a>
+          </div>
+        </div>
+
+        <div id="resumesList" class="text-center py-12 text-slate-500">
+          <i class="fas fa-file-alt text-6xl mb-4 text-slate-300"></i>
+          <h3 class="text-lg font-semibold text-slate-900 mb-2">No resumes yet</h3>
+          <p class="mb-6">Create your first resume to get started.</p>
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a href="/templates.html" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">Create Resume</a>
+            <button onclick="openImportModal()" class="inline-block bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-emerald-700 transition">
+              <i class="fas fa-upload mr-2"></i>Import Resume
+            </button>
+            <a href="/templates.html" class="inline-block px-6 py-3 rounded-lg font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition">Browse Templates</a>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Import Resume Modal -->
+  <div id="importModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeImportModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 py-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-white font-bold text-lg"><i class="fas fa-upload mr-2"></i>Import Resume</h3>
+            <button onclick="closeImportModal()" class="text-white/80 hover:text-white transition">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          <p class="text-emerald-100 text-sm mt-1">Upload your existing resume and we'll extract your information.</p>
+        </div>
+        
+        <div class="p-6">
+          <div class="flex gap-2 mb-5 bg-slate-100 rounded-xl p-1">
+            <button id="importTabStandard" onclick="switchImportTab('standard')" class="flex-1 px-4 py-2 rounded-lg bg-white text-slate-900 font-semibold shadow-sm">From File</button>
+            <button id="importTabLinkedIn" onclick="switchImportTab('linkedin')" class="flex-1 px-4 py-2 rounded-lg text-slate-600 font-semibold">From LinkedIn</button>
+          </div>
+
+          <div id="linkedinInstructions" class="hidden mb-4 p-4 rounded-xl border border-blue-200 bg-blue-50 text-sm text-slate-700">
+            <p class="font-semibold text-slate-900 mb-2"><i class="fab fa-linkedin text-blue-600 mr-2"></i>Import from LinkedIn PDF</p>
+            <p class="mb-2">Download your LinkedIn profile as a PDF, then upload it here.</p>
+            <ol class="list-decimal ml-5 space-y-1 text-slate-600">
+              <li>Click the <strong>Me</strong> icon at the top of your LinkedIn homepage.</li>
+              <li>Click <strong>View profile</strong>.</li>
+              <li>If you wish to save a LinkedIn member’s profile as a PDF file, navigate to their profile.</li>
+              <li>Click the <strong>More</strong> or <strong>Resources</strong> button in the introduction section.</li>
+              <li>Select <strong>Save to PDF</strong> from the dropdown.</li>
+            </ol>
+            <p class="mt-2 text-xs text-slate-500">Upload that PDF here and we will extract it into your resume editor.</p>
+          </div>
+
+          <!-- Upload Area -->
+          <div id="uploadArea" class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-emerald-400 hover:bg-emerald-50/50 transition cursor-pointer" onclick="document.getElementById('resumeFile').click()">
+            <i class="fas fa-cloud-upload-alt text-4xl text-slate-400 mb-3"></i>
+            <p id="uploadTitle" class="text-slate-700 font-medium mb-1">Click to upload or drag and drop</p>
+            <p id="uploadSubtitle" class="text-slate-500 text-sm">PDF or Word document (max 5MB)</p>
+            <input type="file" id="resumeFile" class="hidden" accept=".pdf,.doc,.docx" onchange="handleFileSelect(event)">
+          </div>
+          
+          <!-- Selected File -->
+          <div id="selectedFile" class="hidden mt-4 p-3 bg-slate-50 rounded-lg flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <i class="fas fa-file-alt text-emerald-600 text-xl"></i>
+              <span id="fileName" class="text-slate-700 font-medium"></span>
+            </div>
+            <button onclick="clearSelectedFile()" class="text-slate-400 hover:text-slate-600">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <!-- Error Message -->
+          <div id="importError" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <i class="fas fa-exclamation-circle mr-2"></i><span id="errorText"></span>
+          </div>
+          
+          <!-- Loading State -->
+          <div id="importLoading" class="hidden mt-6 text-center">
+            <div class="inline-flex items-center gap-3">
+              <div class="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+              <span id="importLoadingText" class="text-slate-600">Analyzing your resume...</span>
+            </div>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="flex gap-3 mt-6">
+            <button onclick="closeImportModal()" class="flex-1 px-4 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition">Cancel</button>
+            <button id="importBtn" onclick="submitImport()" class="flex-1 px-4 py-2.5 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+              Import & Edit
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let isPro = false;
+    let latestResumeId = null;
+    let currentImportTab = 'standard';
+
+    if (!token) {
+      window.location.href = '/login.html';
+    } else {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      fetchFreeLimit().then(() => {
+        hydrateUserUI();
+        loadResumes();
+      });
+    }
+
+    let freeResumeLimit = 1; // default, fetched from API
+
+    async function fetchFreeLimit() {
+      try {
+        const res = await fetch('/api/settings/public');
+        if (res.ok) {
+          const data = await res.json();
+          freeResumeLimit = parseInt(data.max_resumes_per_free_user, 10) || 1;
+        }
+      } catch (_) {}
+    }
+
+    function hydrateUserUI() {
+      const firstName = user.first_name || 'there';
+      document.getElementById('userName').textContent = `Welcome, ${firstName}!`;
+      document.getElementById('heroUserName').textContent = firstName;
+      isPro = !!(user.subscription_tier && user.subscription_tier !== 'free');
+
+      if (isPro) {
+        const tier = user.subscription_tier.charAt(0).toUpperCase() + user.subscription_tier.slice(1);
+        document.getElementById('userPlan').textContent = tier;
+        document.getElementById('userPlan').classList.add('text-emerald-600');
+        document.getElementById('planBadge').textContent = `${tier} Plan`;
+        document.getElementById('planBadge').className = 'inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-100 text-sm font-semibold mb-4';
+        document.getElementById('heroSubtitle').textContent = 'You have access to unlimited resumes, premium templates, and AI-powered improvements.';
+        document.getElementById('subscriptionMeta').textContent = user.subscription_expires ? `Subscription active until ${new Date(user.subscription_expires).toLocaleDateString()}` : 'Premium features are active on your account.';
+      } else {
+        document.getElementById('upgradeLink').classList.remove('hidden');
+        document.getElementById('quickUpgradeBtn').classList.remove('hidden');
+        const limitText = freeResumeLimit === 1 ? '1 resume' : `${freeResumeLimit} resumes`;
+        document.getElementById('subscriptionMeta').textContent = `Free plan includes ${limitText}. Upgrade to unlock unlimited resumes, premium templates, and AI features.`;
+        document.getElementById('bannerTitle').textContent = `Free Plan — ${limitText.charAt(0).toUpperCase() + limitText.slice(1)} Limit`;
+      }
+    }
+
+    async function loadResumes() {
+      try {
+        const response = await fetch('/api/resumes', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load resumes');
+
+        const data = await response.json();
+        const resumes = data.resumes || [];
+        latestResumeId = resumes[0]?.id || null;
+        document.getElementById('resumeCount').textContent = resumes.length;
+        document.getElementById('downloadCount').textContent = resumes.reduce((sum, r) => sum + Number(r.download_count || 0), 0);
+        document.getElementById('viewCount').textContent = resumes.reduce((sum, r) => sum + Number(r.view_count || 0), 0);
+        document.getElementById('quickContinueBtn').disabled = !latestResumeId;
+        document.getElementById('quickContinueBtn').classList.toggle('opacity-50', !latestResumeId);
+
+        if (!isPro) {
+          document.getElementById('resumeLimit').textContent = `${resumes.length} / ${freeResumeLimit} (Free limit)`;
+          if (resumes.length >= freeResumeLimit) {
+            document.getElementById('upgradeBanner').classList.remove('hidden');
+            document.getElementById('bannerTitle').textContent = `Free Plan — ${freeResumeLimit === 1 ? '1 Resume' : freeResumeLimit + ' Resumes'} Limit Reached`;
+            document.getElementById('bannerSubtitle').textContent = 'You have reached the free limit. Upgrade to Pro for unlimited resumes, premium templates, and AI features.';
+            retargetCreateButtons('/upgrade.html', '<i class="fas fa-crown mr-2"></i>Upgrade to Pro');
+          }
+        } else {
+          document.getElementById('resumeLimit').textContent = 'Unlimited';
+        }
+
+        renderResumeCards(resumes);
+      } catch (err) {
+        console.error('Failed to load resumes:', err);
+        document.getElementById('resumesList').innerHTML = `
+          <div class="text-center py-10 text-red-500">
+            <i class="fas fa-triangle-exclamation text-4xl mb-3"></i>
+            <p class="font-medium">Failed to load your resumes right now.</p>
+          </div>
+        `;
+      }
+    }
+
+    function retargetCreateButtons(href, html) {
+      document.getElementById('newResumeBtn').href = href;
+      document.getElementById('newResumeBtn').innerHTML = html || 'Upgrade to Pro';
+      document.getElementById('newResumeBtn').className = 'text-amber-600 hover:text-amber-700 font-semibold';
+      document.getElementById('headerNewResumeBtn').href = href;
+      if (html) document.getElementById('headerNewResumeBtn').innerHTML = html;
+      document.getElementById('quickCreateBtn').href = href;
+      if (html) document.getElementById('quickCreateBtn').innerHTML = html;
+    }
+
+    function renderResumeCards(resumes) {
+      const listDiv = document.getElementById('resumesList');
+      if (!resumes.length) {
+        return;
+      }
+
+      listDiv.className = 'grid grid-cols-1 xl:grid-cols-2 gap-5';
+      listDiv.innerHTML = resumes.map((r, index) => {
+        const updated = r.updated_at ? new Date(r.updated_at).toLocaleDateString() : 'Recently';
+        const templateThumb = r.thumbnail_url ? `<img src="${r.thumbnail_url}" alt="${r.template_name || 'Template'}" class="w-full h-full object-cover rounded-lg">` : '<i class="fas fa-file-alt text-slate-300 text-3xl"></i>';
+        const badge = index === 0 ? '<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">Latest</span>' : '';
+        return `
+          <article class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 hover:border-blue-300 hover:bg-white transition">
+            <div class="flex gap-4 items-start">
+              <div class="w-20 h-28 rounded-xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">${templateThumb}</div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-3 mb-2">
+                  <div>
+                    <h3 class="font-semibold text-slate-900 text-lg truncate">${r.title || 'Untitled Resume'}</h3>
+                    <p class="text-sm text-slate-500 mt-1">${r.template_name || 'Default Template'}</p>
+                  </div>
+                  ${badge}
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-sm text-slate-500 mb-4">
+                  <div><span class="font-medium text-slate-700">Updated:</span> ${updated}</div>
+                  <div><span class="font-medium text-slate-700">Views:</span> ${Number(r.view_count || 0)}</div>
+                  <div><span class="font-medium text-slate-700">Downloads:</span> ${Number(r.download_count || 0)}</div>
+                  <div><span class="font-medium text-slate-700">Status:</span> Ready to edit</div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <a href="/builder.html?id=${r.id}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">Edit</a>
+                  <a href="/preview.html?id=${r.id}" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition text-sm font-medium">Preview</a>
+                  <a href="/preview.html?id=${r.id}&download=1" target="_blank" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition text-sm font-medium">Download PDF</a>
+                  <button data-resume-id="${r.id}" data-resume-title="${encodeURIComponent(r.title || 'Untitled Resume')}" class="resume-delete-btn px-4 py-2 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition text-sm font-medium">Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+      bindResumeCardActions();
+    }
+
+    function bindResumeCardActions() {
+      document.querySelectorAll('.resume-delete-btn').forEach((button) => {
+        button.onclick = () => {
+          const resumeId = button.dataset.resumeId;
+          const resumeTitle = decodeURIComponent(button.dataset.resumeTitle || 'Untitled Resume');
+          deleteResume(resumeId, resumeTitle);
+        };
+      });
+    }
+
+    async function deleteResume(resumeId, resumeTitle) {
+      const confirmed = confirm(`Delete "${resumeTitle}" permanently? This cannot be undone.`);
+      if (!confirmed) return;
+
+      try {
+        const response = await fetch(`/api/resumes/${resumeId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to delete resume');
+        }
+
+        await loadResumes();
+      } catch (err) {
+        console.error('Delete failed:', err);
+        alert(err.message || 'Failed to delete resume. Please try again.');
+      }
+    }
+
+    function continueLatestResume() {
+      if (!latestResumeId) return;
+      window.location.href = `/builder.html?id=${latestResumeId}`;
+    }
+
+    // Import Resume Functions
+    function switchImportTab(tab) {
+      currentImportTab = tab;
+      const isLinkedIn = tab === 'linkedin';
+      document.getElementById('importTabStandard').className = `flex-1 px-4 py-2 rounded-lg font-semibold ${isLinkedIn ? 'text-slate-600' : 'bg-white text-slate-900 shadow-sm'}`;
+      document.getElementById('importTabLinkedIn').className = `flex-1 px-4 py-2 rounded-lg font-semibold ${isLinkedIn ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`;
+      document.getElementById('linkedinInstructions').classList.toggle('hidden', !isLinkedIn);
+      document.getElementById('uploadSubtitle').textContent = isLinkedIn ? 'LinkedIn PDF export only (max 5MB)' : 'PDF or Word document (max 5MB)';
+      document.getElementById('uploadTitle').textContent = isLinkedIn ? 'Upload your LinkedIn PDF export' : 'Click to upload or drag and drop';
+      document.getElementById('resumeFile').accept = isLinkedIn ? '.pdf' : '.pdf,.doc,.docx';
+      document.getElementById('importBtn').textContent = isLinkedIn ? 'Import LinkedIn PDF' : 'Import & Edit';
+      clearSelectedFile();
+      hideImportError();
+    }
+
+    function openImportModal() {
+      document.getElementById('importModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      switchImportTab('standard');
+    }
+
+    function closeImportModal() {
+      document.getElementById('importModal').classList.add('hidden');
+      document.body.style.overflow = '';
+      clearSelectedFile();
+      hideImportError();
+    }
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showImportError('File too large. Maximum size is 5MB.');
+        return;
+      }
+
+      // Validate file type
+      const validTypes = currentImportTab === 'linkedin'
+        ? ['application/pdf']
+        : ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!validTypes.includes(file.type)) {
+        showImportError(currentImportTab === 'linkedin'
+          ? 'Invalid file type. Please upload your LinkedIn PDF export.'
+          : 'Invalid file type. Please upload a PDF or Word document.');
+        return;
+      }
+
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('uploadArea').classList.add('hidden');
+      document.getElementById('selectedFile').classList.remove('hidden');
+      document.getElementById('importBtn').disabled = false;
+      hideImportError();
+    }
+
+    function clearSelectedFile() {
+      document.getElementById('resumeFile').value = '';
+      document.getElementById('uploadArea').classList.remove('hidden');
+      document.getElementById('selectedFile').classList.add('hidden');
+      document.getElementById('importBtn').disabled = true;
+    }
+
+    function showImportError(message) {
+      document.getElementById('errorText').textContent = message;
+      document.getElementById('importError').classList.remove('hidden');
+    }
+
+    function hideImportError() {
+      document.getElementById('importError').classList.add('hidden');
+    }
+
+    async function submitImport() {
+      const fileInput = document.getElementById('resumeFile');
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        showImportError('Please select a file to import.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      document.getElementById('importLoadingText').textContent = currentImportTab === 'linkedin'
+        ? 'Analyzing your LinkedIn PDF...'
+        : 'Analyzing your resume...';
+      document.getElementById('importLoading').classList.remove('hidden');
+      document.getElementById('importBtn').disabled = true;
+
+      try {
+        const response = await fetch('/api/resume/import', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        const rawResponseText = await response.text();
+        let result = {};
+
+        try {
+          result = rawResponseText ? JSON.parse(rawResponseText) : {};
+        } catch (parseError) {
+          console.error('Import response was not valid JSON:', rawResponseText);
+          throw new Error('The server returned an incomplete import response. Please try this file again.');
+        }
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to import resume');
+        }
+
+        const importedResumeData = result.resumeData || result.data;
+        if (!importedResumeData) {
+          throw new Error('Imported resume data was missing from the server response.');
+        }
+
+        const existingResumesResponse = await fetch('/api/resumes', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        let targetResumeId = null;
+        if (existingResumesResponse.ok) {
+          const existingResumesResult = await existingResumesResponse.json();
+          const importedTitle = (importedResumeData.title || 'Imported Resume').trim();
+          const importedName = (importedResumeData.basics?.name || '').trim().toLowerCase();
+          const importedEmail = (importedResumeData.basics?.email || '').trim().toLowerCase();
+          const importedPhone = (importedResumeData.basics?.phone || '').trim();
+
+          const matchingResume = (existingResumesResult.resumes || []).find((resume) => {
+            const titleMatch = (resume.title || '').trim() === importedTitle;
+            if (!titleMatch) return false;
+
+            try {
+              const content = typeof resume.content === 'string' ? JSON.parse(resume.content) : (resume.content || {});
+              const existingName = (content.basics?.name || '').trim().toLowerCase();
+              const existingEmail = (content.basics?.email || '').trim().toLowerCase();
+              const existingPhone = (content.basics?.phone || '').trim();
+
+              return (!!importedName && existingName === importedName)
+                || (!!importedEmail && existingEmail === importedEmail)
+                || (!!importedPhone && existingPhone === importedPhone);
+            } catch (_) {
+              return false;
+            }
+          });
+
+          if (matchingResume?.id) {
+            targetResumeId = matchingResume.id;
+          }
+        }
+
+        const savePayload = {
+          title: importedResumeData.title || 'Imported Resume',
+          content: JSON.stringify(importedResumeData),
+          template_id: 1
+        };
+
+        const saveResponse = await fetch(targetResumeId ? `/api/resumes/${targetResumeId}` : '/api/resumes', {
+          method: targetResumeId ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(savePayload)
+        });
+
+        const saveResult = await saveResponse.json();
+        const finalResumeId = targetResumeId || saveResult.id || saveResult.resume_id;
+        if (!saveResponse.ok || !finalResumeId) {
+          throw new Error(saveResult.error || 'Imported resume was parsed, but saving the draft failed.');
+        }
+        
+        closeImportModal();
+        window.location.href = `/builder.html?id=${finalResumeId}`;
+
+      } catch (err) {
+        console.error('Import failed:', err);
+        showImportError(err.message || 'Failed to import resume. Please try again.');
+        document.getElementById('importLoading').classList.add('hidden');
+        document.getElementById('importBtn').disabled = false;
+      }
+    }
+
+    // Drag and drop support
+    document.addEventListener('DOMContentLoaded', function() {
+      const uploadArea = document.getElementById('uploadArea');
+      if (!uploadArea) return;
+
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, () => {
+          uploadArea.classList.add('border-emerald-400', 'bg-emerald-50');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, () => {
+          uploadArea.classList.remove('border-emerald-400', 'bg-emerald-50');
+        }, false);
+      });
+
+      uploadArea.addEventListener('drop', handleDrop, false);
+
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+          document.getElementById('resumeFile').files = files;
+          handleFileSelect({ target: { files: files } });
+        }
+      }
+    });
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/index.html';
+    }
+  </script>
+</body>
+</html>

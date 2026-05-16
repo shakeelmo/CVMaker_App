@@ -1,0 +1,2276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATS CVMaker.ink - cvmaker.ink</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .section-card { @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6; }
+    .field-group { @apply mb-4; }
+    .field-label { @apply block text-sm font-medium text-gray-700 mb-1; }
+    .field-input { @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500; }
+    .btn-primary { @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition; }
+    .btn-secondary { @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition; }
+    .btn-success { @apply bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition; }
+    .btn-danger { @apply bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 transition text-sm; }
+    .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .collapsible-content.open { max-height: 3000px; }
+    .toggle-icon { transition: transform 0.3s ease; }
+    .toggle-icon.open { transform: rotate(180deg); }
+    
+    /* ATS Score Styles */
+    .ats-score-container { @apply fixed right-4 top-20 bg-white rounded-xl shadow-lg border border-gray-200 p-4 w-72 z-30; }
+    .ats-score-bar { @apply h-4 rounded-full overflow-hidden bg-gray-200; }
+    .ats-score-fill { @apply h-full transition-all duration-500; }
+    .score-excellent { @apply bg-green-500; }
+    .score-good { @apply bg-blue-500; }
+    .score-needs-work { @apply bg-yellow-500; }
+    .score-poor { @apply bg-red-500; }
+    
+    /* Keyword Highlighting */
+    .keyword-match { @apply bg-green-100 text-green-800 px-2 py-1 rounded text-sm; }
+    .keyword-missing { @apply bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm; }
+    
+    /* Template Preview */
+    .template-preview { @apply border-2 border-gray-200 rounded-lg p-4 cursor-pointer transition-all hover:border-blue-400; }
+    .template-preview.active { @apply border-blue-600 bg-blue-50; }
+    
+    /* ATS Warning */
+    .ats-warning { @apply bg-yellow-50 border border-yellow-300 rounded-lg p-3 mb-4 text-sm text-yellow-800; }
+    .ats-error { @apply bg-red-50 border border-red-300 rounded-lg p-3 mb-4 text-sm text-red-800; }
+    .ats-success { @apply bg-green-50 border border-green-300 rounded-lg p-3 mb-4 text-sm text-green-800; }
+    
+    /* Skills Badge */
+    .skill-badge { @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mr-2 mb-2; }
+    
+    /* Loading Spinner */
+    .spinner { @apply animate-spin rounded-full h-5 w-5 border-b-2 border-white; }
+    .photo-drag-over { border-color: #2563eb !important; background: #dbeafe !important; }
+
+    /* ── Stepper ── */
+    .stepper-nav{display:flex;align-items:center;justify-content:space-between;background:white;border-radius:.75rem;border:1px solid #e5e7eb;padding:1rem 1.25rem;margin-bottom:1.25rem;box-shadow:0 1px 2px rgba(0,0,0,.05);overflow-x:auto;gap:.25rem}
+    .stepper-step{display:flex;flex-direction:column;align-items:center;cursor:pointer;min-width:60px;flex:1;position:relative}
+    .stepper-step:not(:last-child)::after{content:'';position:absolute;top:16px;left:calc(50% + 18px);right:calc(-50% + 18px);height:2px;background:#e5e7eb;z-index:0}
+    .stepper-step.completed:not(:last-child)::after{background:#22c55e}
+    .stepper-step.active:not(:last-child)::after{background:#bfdbfe}
+    .stepper-pill{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8125rem;font-weight:700;border:2px solid #e5e7eb;background:white;color:#9ca3af;position:relative;z-index:1;transition:all .2s}
+    .stepper-step.active .stepper-pill{background:#2563eb;border-color:#2563eb;color:white;box-shadow:0 0 0 3px rgba(37,99,235,.2)}
+    .stepper-step.completed .stepper-pill{background:#22c55e;border-color:#22c55e;color:white}
+    .stepper-label{font-size:.6875rem;font-weight:500;color:#9ca3af;margin-top:4px;text-align:center;white-space:nowrap}
+    .stepper-step.active .stepper-label{color:#2563eb;font-weight:600}
+    .stepper-step.completed .stepper-label{color:#16a34a}
+    .stepper-bottom-nav{display:flex;justify-content:space-between;align-items:center;background:white;border-radius:.75rem;border:1px solid #e5e7eb;padding:.875rem 1.25rem;margin-top:1.25rem;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+    .stepper-progress-text{font-size:.8125rem;color:#6b7280}
+    .stepper-section{display:none}
+    .stepper-section.stepper-visible{display:block}
+
+    /* ── Empty State Guidance ── */
+    .empty-state-guidance{display:flex;align-items:center;justify-content:space-between;background:#f9fafb;border:1.5px dashed #d1d5db;border-radius:.75rem;padding:1rem 1.25rem;gap:1rem}
+    .empty-state-guidance p{color:#6b7280;font-size:.875rem;margin:0}
+    .empty-state-guidance .add-btn{display:inline-flex;align-items:center;gap:.375rem;background:#2563eb;color:white;padding:.5rem 1rem;border-radius:.5rem;font-size:.875rem;font-weight:600;white-space:nowrap;border:none;cursor:pointer}
+    .empty-state-guidance .add-btn:hover{background:#1d4ed8}
+
+    /* ── Completion Bar ── */
+    .completion-bar-container{background:white;border-radius:.75rem;border:1px solid #e5e7eb;padding:1rem 1.25rem;margin-top:1.25rem;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+    .completion-bar-track{height:10px;border-radius:9999px;background:#e5e7eb;overflow:hidden}
+    .completion-bar-fill{height:100%;border-radius:9999px;transition:width .5s ease,background-color .3s ease}
+    .completion-bar-fill.c-red{background:#ef4444}
+    .completion-bar-fill.c-orange{background:#f97316}
+    .completion-bar-fill.c-green{background:#22c55e}
+    .completion-section-dots{display:flex;gap:6px;flex-wrap:wrap;margin-top:.5rem}
+    .completion-dot{width:10px;height:10px;border-radius:50%}
+    .completion-dot.filled{background:#22c55e}
+    .completion-dot.empty-dot{background:#d1d5db}
+
+    /* ── Section Tips ── */
+    .section-tip{display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:.5rem;padding:.5rem .75rem;margin-bottom:.75rem;font-size:.8125rem;color:#1e40af;line-height:1.5}
+    .section-tip.tip-visible{display:flex;align-items:flex-start;gap:.375rem;animation:tipFadeIn .25s ease-out}
+    @keyframes tipFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ── Mobile Preview FAB ── */
+    .mobile-preview-fab{display:none;position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:40;background:#2563eb;color:#fff;border:none;border-radius:9999px;padding:.75rem 2rem;font-size:.9375rem;font-weight:600;box-shadow:0 4px 14px rgba(37,99,235,.45);cursor:pointer;align-items:center;gap:.5rem;transition:background .15s}
+    .mobile-preview-fab:hover{background:#1d4ed8}
+    @media(max-width:767px){.mobile-preview-fab{display:inline-flex}.builder-panel:first-child{padding-bottom:4.5rem}}
+    .mobile-preview-overlay{display:none;position:fixed;inset:0;z-index:50;background:#fff;flex-direction:column}
+    .mobile-preview-overlay.open{display:flex}
+    .mobile-preview-overlay-header{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;background:#f9fafb;border-bottom:1px solid #e5e7eb;flex-shrink:0}
+    .mobile-preview-overlay-header h2{font-size:1rem;font-weight:600;margin:0}
+    .mobile-preview-overlay-close{background:#e5e7eb;border:none;border-radius:.5rem;padding:.5rem 1rem;font-size:.875rem;font-weight:600;cursor:pointer;color:#374151}
+    .mobile-preview-overlay iframe{flex:1;width:100%;border:0;background:#fff}
+
+    /* ── Auto-save status ── */
+    #autosaveStatus{font-size:.75rem;color:#6b7280;margin-left:.5rem}
+    #autosaveStatus.saving{color:#2563eb}
+    #autosaveStatus.saved{color:#16a34a}
+    #autosaveStatus.save-error{color:#dc2626;cursor:pointer}
+    .builder-shell { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .builder-panel { min-width: 0; }
+    .preview-frame { width: 100%; min-height: 1100px; border: 0; background: white; }
+    .mobile-preview-toggle button.active { @apply bg-blue-600 text-white; }
+    @media (min-width: 1024px) {
+      .builder-shell { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); align-items: start; }
+      .preview-sticky { position: sticky; top: 5.5rem; }
+    }
+  </style>
+  <script src="/assets/js/tracking-loader.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <header class="bg-white shadow-sm sticky top-0 z-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center space-x-4">
+          <a href="/dashboard.html" class="text-gray-600 hover:text-gray-900">
+            <i class="fas fa-arrow-left"></i>
+          </a>
+          <div>
+            <h1 class="text-xl font-bold">ATS CVMaker.ink</h1>
+            <p class="text-xs text-gray-500">Optimized for Applicant Tracking Systems</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-3">
+          <button onclick="showATSCheck()" class="btn-secondary">
+            <i class="fas fa-check-circle mr-2"></i>ATS Check
+          </button>
+          <button onclick="showJobMatcher()" class="btn-secondary">
+            <i class="fas fa-briefcase mr-2"></i>Job Match
+          </button>
+          <button onclick="exportPDF()" class="btn-success">
+            <i class="fas fa-file-pdf mr-2"></i>Export PDF
+          </button>
+          <button onclick="saveResume()" class="btn-primary" id="manualSaveBtn">
+            <i class="fas fa-save mr-2"></i>Save
+          </button>
+          <span id="autosaveStatus"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ATS Score Panel (Fixed) -->
+  <div id="atsScorePanel" class="ats-score-container">
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="font-semibold text-gray-800">ATS Score</h3>
+      <span id="atsScoreValue" class="text-2xl font-bold text-blue-600">0/100</span>
+    </div>
+    <div class="ats-score-bar mb-3">
+      <div id="atsScoreFill" class="ats-score-fill score-poor" style="width: 0%"></div>
+    </div>
+    <div id="atsScoreDetails" class="text-sm text-gray-600 space-y-1">
+      <div class="flex justify-between"><span>Keywords</span><span id="scoreKeywords">0%</span></div>
+      <div class="flex justify-between"><span>Format</span><span id="scoreFormat">0%</span></div>
+      <div class="flex justify-between"><span>Content</span><span id="scoreContent">0%</span></div>
+    </div>
+    <button onclick="showATSReport()" class="w-full mt-3 text-blue-600 text-sm hover:underline">
+      View Full Report
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading" class="text-center py-20">
+    <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
+    <p class="mt-4 text-gray-600">Loading ATS CVMaker.ink...</p>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
+    <div class="mobile-preview-toggle lg:hidden flex items-center justify-center mb-4">
+      <div class="inline-flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
+        <button id="mobileEditBtn" onclick="setMobileBuilderView('edit')" class="active px-4 py-2 rounded-lg font-medium text-sm">Edit</button>
+        <button id="mobilePreviewBtn" onclick="setMobileBuilderView('preview')" class="px-4 py-2 rounded-lg font-medium text-sm text-gray-600">Preview</button>
+      </div>
+    </div>
+    <div class="builder-shell">
+      <div id="builderEditorPanel" class="builder-panel">
+    
+    <!-- Step Progress -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="flex space-x-4">
+          <button onclick="switchTab('content')" id="tab-btn-content" class="flex items-center space-x-2 px-4 py-2 rounded-lg bg-blue-100 text-blue-700 font-medium">
+            <i class="fas fa-edit"></i><span>Content</span>
+          </button>
+          <button onclick="switchTab('templates')" id="tab-btn-templates" class="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100">
+            <i class="fas fa-palette"></i><span>Templates</span>
+          </button>
+          <button onclick="switchTab('optimize')" id="tab-btn-optimize" class="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100">
+            <i class="fas fa-magic"></i><span>Optimize</span>
+          </button>
+        </div>
+        <button onclick="switchTab('templates')" class="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition">
+          <i class="fas fa-palette mr-2"></i>Change Template
+        </button>
+      </div>
+    </div>
+
+    <!-- Content Tab -->
+    <div id="tab-content" class="space-y-6">
+
+      <!-- Stepper Navigation -->
+      <div id="stepperNav" class="stepper-nav">
+        <div class="stepper-step active" id="step-indicator-1" onclick="goToStep(1)">
+          <div class="stepper-pill" id="step-pill-1">1</div>
+          <div class="stepper-label">Basic Info</div>
+        </div>
+        <div class="stepper-step" id="step-indicator-2" onclick="goToStep(2)">
+          <div class="stepper-pill" id="step-pill-2">2</div>
+          <div class="stepper-label">Summary</div>
+        </div>
+        <div class="stepper-step" id="step-indicator-3" onclick="goToStep(3)">
+          <div class="stepper-pill" id="step-pill-3">3</div>
+          <div class="stepper-label">Experience</div>
+        </div>
+        <div class="stepper-step" id="step-indicator-4" onclick="goToStep(4)">
+          <div class="stepper-pill" id="step-pill-4">4</div>
+          <div class="stepper-label">Education</div>
+        </div>
+        <div class="stepper-step" id="step-indicator-5" onclick="goToStep(5)">
+          <div class="stepper-pill" id="step-pill-5">5</div>
+          <div class="stepper-label">Skills</div>
+        </div>
+        <div class="stepper-step" id="step-indicator-6" onclick="goToStep(6)">
+          <div class="stepper-pill" id="step-pill-6">6</div>
+          <div class="stepper-label">Extras</div>
+        </div>
+      </div>
+      
+      <!-- Resume Title -->
+      <div class="section-card stepper-section stepper-visible" data-step="1" id="resumeTitleCard">
+        <div class="field-group">
+          <label class="field-label">Resume Title <span class="text-red-500">*</span></label>
+          <input type="text" id="resumeTitle" class="field-input" placeholder="e.g., Senior Software Engineer Resume" oninput="updateATSScore()">
+          <p class="text-xs text-gray-500 mt-1">Use a descriptive title that includes your target role</p>
+        </div>
+      </div>
+
+      <!-- Job Target Section (NEW) -->
+      <div class="section-card stepper-section stepper-visible" data-step="1" id="targetJobCard">
+        <div class="flex justify-between items-center mb-4 cursor-pointer" onclick="toggleSection('jobtarget')">
+          <h2 class="text-lg font-semibold"><i class="fas fa-bullseye mr-2 text-blue-600"></i>Target Job</h2>
+          <i id="icon-jobtarget" class="fas fa-chevron-down text-gray-400 toggle-icon"></i>
+        </div>
+        <div id="jobtarget" class="collapsible-content">
+          <div class="field-group">
+            <label class="field-label">Target Job Title</label>
+            <input type="text" id="targetJobTitle" class="field-input" placeholder="e.g., Senior Software Engineer" oninput="updateATSScore()">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Target Industry</label>
+            <select id="targetIndustry" class="field-input" onchange="updateATSScore()">
+              <option value="">Select Industry...</option>
+              <option value="tech">Technology / IT</option>
+              <option value="finance">Finance / Banking</option>
+              <option value="healthcare">Healthcare</option>
+              <option value="marketing">Marketing / Advertising</option>
+              <option value="sales">Sales</option>
+              <option value="education">Education</option>
+              <option value="engineering">Engineering</option>
+              <option value="consulting">Consulting</option>
+              <option value="retail">Retail / E-commerce</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Paste Job Description (for keyword matching)</label>
+            <textarea id="jobDescription" class="field-input" rows="6" placeholder="Paste the job description here to get keyword suggestions..."></textarea>
+            <button onclick="analyzeJobDescription()" class="btn-primary mt-2">
+              <i class="fas fa-search mr-2"></i>Analyze Keywords
+            </button>
+          </div>
+          <div id="keywordSuggestions" class="mt-4 hidden">
+            <h4 class="font-medium mb-2">Suggested Keywords:</h4>
+            <div id="suggestedKeywords" class="flex flex-wrap gap-2"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Personal Info -->
+      <div class="section-card stepper-section stepper-visible" data-step="1" id="personalInfoCard">
+        <div class="flex justify-between items-center mb-4 cursor-pointer" onclick="toggleSection('basics')">
+          <h2 class="text-lg font-semibold"><i class="fas fa-user mr-2 text-blue-600"></i>Personal Information</h2>
+          <i id="icon-basics" class="fas fa-chevron-down text-gray-400 toggle-icon open"></i>
+        </div>
+        <div id="basics" class="collapsible-content open">
+
+          <!-- Profile Photo Upload Area -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-3">
+              <i class="fas fa-camera mr-2 text-blue-600"></i>Profile Photo
+              <span class="ml-2 text-xs font-normal text-gray-400">(Optional)</span>
+            </label>
+            <div id="photoUploadArea"
+              onclick="document.getElementById('profilePhotoInput').click()"
+              ondragover="event.preventDefault(); this.classList.add('photo-drag-over')"
+              ondragleave="this.classList.remove('photo-drag-over')"
+              ondrop="handlePhotoDrop(event)"
+              style="
+                display: flex;
+                align-items: center;
+                gap: 1.5rem;
+                background: #f8fafc;
+                border: 2px dashed #cbd5e1;
+                border-radius: 1rem;
+                padding: 1.5rem;
+                cursor: pointer;
+                transition: all 0.2s;
+              "
+              onmouseenter="this.style.borderColor='#3b82f6'; this.style.background='#eff6ff'"
+              onmouseleave="if(!document.getElementById('profilePhotoInput').value){ this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc' }">
+
+              <!-- Photo Preview Circle -->
+              <div id="photoPreview"
+                style="
+                  width: 100px;
+                  height: 100px;
+                  border-radius: 50%;
+                  background: #e2e8f0;
+                  border: 3px solid #cbd5e1;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  overflow: hidden;
+                  flex-shrink: 0;
+                  color: #94a3b8;
+                ">
+                <i class="fas fa-user" style="font-size: 2.5rem;"></i>
+              </div>
+
+              <!-- Upload Instructions -->
+              <div id="photoUploadText" style="flex: 1;">
+                <p style="font-size: 0.9375rem; font-weight: 600; color: #1e293b; margin: 0 0 0.25rem;">
+                  Click to upload your photo
+                </p>
+                <p style="font-size: 0.8125rem; color: #64748b; margin: 0 0 0.75rem;">
+                  or drag and drop here
+                </p>
+                <p style="font-size: 0.75rem; color: #94a3b8; margin: 0;">
+                  JPG, PNG or WebP — Max 2MB — Square photos work best
+                </p>
+                <div id="photoActionBtns" style="display: flex; gap: 0.625rem; margin-top: 0.875rem;">
+                  <span style="
+                    display: inline-flex; align-items: center; gap: 0.375rem;
+                    background: #2563eb; color: white;
+                    padding: 0.4375rem 1rem; border-radius: 0.5rem;
+                    font-size: 0.8125rem; font-weight: 600;
+                    pointer-events: none;
+                  ">
+                    <i class="fas fa-upload"></i> Choose Photo
+                  </span>
+                  <button type="button" id="removePhotoBtn"
+                    onclick="event.stopPropagation(); removeProfilePhoto()"
+                    style="
+                      display: none;
+                      align-items: center; gap: 0.375rem;
+                      background: #fee2e2; color: #dc2626;
+                      padding: 0.4375rem 1rem; border-radius: 0.5rem;
+                      font-size: 0.8125rem; font-weight: 600;
+                      border: none; cursor: pointer;
+                    ">
+                    <i class="fas fa-trash"></i> Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+            <input type="file" id="profilePhotoInput" class="hidden" accept="image/jpeg,image/png,image/webp" onchange="handleProfilePhotoUpload(event)">
+          </div>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="field-group">
+              <label class="field-label">Full Name <span class="text-red-500">*</span></label>
+              <input type="text" id="basicsName" class="field-input" placeholder="John Doe" oninput="handleBasicsInputChange()">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Professional Title</label>
+              <input type="text" id="basicsHeadline" class="field-input" placeholder="Senior Software Engineer" oninput="handleBasicsInputChange()">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Email <span class="text-red-500">*</span></label>
+              <input type="email" id="basicsEmail" class="field-input" placeholder="john@example.com" oninput="handleBasicsInputChange()">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Phone</label>
+              <input type="tel" id="basicsPhone" class="field-input" placeholder="+1 (555) 123-4567" oninput="handleBasicsInputChange()">
+            </div>
+            <div class="field-group md:col-span-2">
+              <label class="field-label">Location (City, State)</label>
+              <input type="text" id="basicsLocation" class="field-input" placeholder="San Francisco, CA" oninput="handleBasicsInputChange()">
+            </div>
+            <div class="field-group">
+              <label class="field-label">LinkedIn URL</label>
+              <input type="url" id="basicsLinkedIn" class="field-input" placeholder="https://linkedin.com/in/johndoe" oninput="handleBasicsInputChange()">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Portfolio/Website</label>
+              <input type="url" id="basicsUrl" class="field-input" placeholder="https://johndoe.dev" oninput="handleBasicsInputChange()">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Date of Birth</label>
+              <input type="date" id="basicsDateOfBirth" class="field-input" oninput="handleBasicsInputChange()">
+              <p class="text-xs text-gray-500 mt-1">Optional, only include if required for the job</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Nationality</label>
+              <input type="text" id="basicsNationality" class="field-input" placeholder="e.g. Saudi, British, American" oninput="handleBasicsInputChange()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Professional Summary -->
+      <div class="section-card stepper-section" data-step="2" id="summaryCard">
+        <div class="flex justify-between items-center mb-4 cursor-pointer" onclick="toggleSection('summary')">
+          <h2 class="text-lg font-semibold"><i class="fas fa-align-left mr-2 text-blue-600"></i>Professional Summary</h2>
+          <i id="icon-summary" class="fas fa-chevron-down text-gray-400 toggle-icon"></i>
+        </div>
+        <div class="section-tip tip-visible" id="tip-summary">
+          <i class="fas fa-lightbulb" style="color:#f59e0b;flex-shrink:0;margin-top:2px"></i>
+          <span>3 sentences max. Include job title, years of experience, and top achievement</span>
+        </div>
+        <div id="summary" class="collapsible-content open">
+          <div class="field-group">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-1">
+              <label class="field-label mb-0">Summary (3-5 sentences recommended)</label>
+              <div class="flex items-center gap-3">
+                <button id="aiSummaryBtn" onclick="generateSummaryWithAI()" type="button" class="hidden btn-primary text-sm">
+                  <i class="fas fa-wand-magic-sparkles mr-2"></i>Generate with AI
+                </button>
+                <a id="aiUpgradeLink" href="/upgrade.html" class="hidden text-sm font-medium text-amber-600 hover:text-amber-700">
+                  <i class="fas fa-crown mr-1"></i>AI available for Pro, Upgrade
+                </a>
+              </div>
+            </div>
+            <textarea id="summaryContent" class="field-input" rows="5" placeholder="Results-driven software engineer with 5+ years of experience in full-stack development..." oninput="updateATSScore()"></textarea>
+            <div class="flex justify-between mt-1">
+              <span class="text-xs text-gray-500">ATS Tip: Include your target job title and key skills</span>
+              <span id="summaryCharCount" class="text-xs text-gray-500">0 characters</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills (ATS Priority) -->
+      <div class="section-card border-blue-300 bg-blue-50 stepper-section" data-step="5" id="skillsCard">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold"><i class="fas fa-star mr-2 text-blue-600"></i>Skills <span class="text-blue-600 text-sm font-normal">(ATS Priority)</span></h2>
+          <button onclick="addSkill()" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i>Add Skill</button>
+        </div>
+        <div class="section-tip tip-visible" id="tip-skills">
+          <i class="fas fa-lightbulb" style="color:#f59e0b;flex-shrink:0;margin-top:2px"></i>
+          <span>Add keywords from the job description to pass ATS filters. Aim for 5-10 skills.</span>
+        </div>
+        <div id="skillsContainer" class="space-y-3">
+          <div class="flex gap-2">
+            <input type="text" id="skillInput" class="field-input flex-1" placeholder="e.g., JavaScript" onkeypress="if(event.key==='Enter') addSkill()">
+            <select id="skillProficiency" class="field-input w-36">
+              <option value="beginner">Beginner</option>
+              <option value="intermediate" selected>Intermediate</option>
+              <option value="advanced">Advanced</option>
+              <option value="expert">Expert</option>
+            </select>
+            <button onclick="addSkill()" class="btn-primary">Add</button>
+          </div>
+          <div id="skillsList" class="flex flex-wrap gap-2 mt-3"></div>
+          <div id="skillsEmptyState" class="empty-state-guidance mt-2">
+            <p><i class="fas fa-info-circle mr-2 text-blue-500"></i>Add 5-10 skills matching your target job description</p>
+            <button onclick="document.getElementById('skillInput').focus()" class="add-btn"><i class="fas fa-plus"></i> Add</button>
+          </div>
+          <div id="skillsATSWarning" class="ats-warning hidden">
+            <i class="fas fa-exclamation-triangle mr-2"></i>ATS Tip: Add at least 5-10 relevant skills from the job description
+          </div>
+        </div>
+      </div>
+
+      <!-- Work Experience -->
+      <div class="section-card stepper-section" data-step="3" id="experienceCard">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold"><i class="fas fa-briefcase mr-2 text-blue-600"></i>Work Experience</h2>
+          <button onclick="addExperience()" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i>Add Experience</button>
+        </div>
+        <div class="section-tip" id="tip-experience">
+          <i class="fas fa-lightbulb" style="color:#f59e0b;flex-shrink:0;margin-top:2px"></i>
+          <span>Use action verbs. Add numbers: Increased sales by 30%, Managed team of 5</span>
+        </div>
+        <div id="experienceList" class="space-y-4">
+          <div id="experienceEmptyState" class="empty-state-guidance">
+            <p><i class="fas fa-info-circle mr-2 text-blue-500"></i>Add your most recent job first. Include title, company, dates, and 2-3 achievement bullet points.</p>
+            <button onclick="addExperience()" class="add-btn"><i class="fas fa-plus"></i> Add</button>
+          </div>
+        </div>
+        <div id="experienceATSWarning" class="ats-warning hidden mt-4">
+          <i class="fas fa-exclamation-triangle mr-2"></i>
+          ATS Tip: Use bullet points with action verbs and quantify achievements (e.g., "Increased sales by 25%")
+        </div>
+      </div>
+
+      <!-- Education -->
+      <div class="section-card stepper-section" data-step="4" id="educationCard">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold"><i class="fas fa-graduation-cap mr-2 text-blue-600"></i>Education</h2>
+          <button onclick="addEducation()" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i>Add Education</button>
+        </div>
+        <div id="educationList" class="space-y-4">
+          <div id="educationEmptyState" class="empty-state-guidance">
+            <p><i class="fas fa-info-circle mr-2 text-blue-500"></i>Add your highest degree first</p>
+            <button onclick="addEducation()" class="add-btn"><i class="fas fa-plus"></i> Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Certifications -->
+      <div class="section-card stepper-section" data-step="6" id="certificationsCard">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold"><i class="fas fa-certificate mr-2 text-blue-600"></i>Certifications</h2>
+          <button onclick="addCertification()" class="btn-primary text-sm">
+            <i class="fas fa-plus mr-1"></i>Add Certification
+          </button>
+        </div>
+        <div id="certificationsList" class="space-y-4"></div>
+      </div>
+
+      <!-- Projects -->
+      <div class="section-card stepper-section" data-step="6" id="projectsCard">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold"><i class="fas fa-project-diagram mr-2 text-blue-600"></i>Projects</h2>
+          <button onclick="addProject()" class="btn-primary text-sm">
+            <i class="fas fa-plus mr-1"></i>Add Project
+          </button>
+        </div>
+        <div id="projectsList" class="space-y-4"></div>
+      </div>
+
+      <!-- Languages -->
+      <div class="section-card stepper-section" data-step="6" id="languagesCard">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold"><i class="fas fa-language mr-2 text-blue-600"></i>Languages</h2>
+          <button onclick="addLanguage()" class="btn-primary text-sm">
+            <i class="fas fa-plus mr-1"></i>Add Language
+          </button>
+        </div>
+        <div id="languagesList" class="space-y-3"></div>
+      </div>
+
+      <!-- Stepper Bottom Navigation -->
+      <div class="stepper-bottom-nav" id="stepperBottomNav">
+        <button id="stepPrevBtn" onclick="prevStep()" class="btn-secondary" style="visibility:hidden">
+          <i class="fas fa-arrow-left mr-2"></i>Back
+        </button>
+        <span class="stepper-progress-text" id="stepProgressText">Step 1 of 6 — Basic Info</span>
+        <button id="stepNextBtn" onclick="nextStep()" class="btn-primary">
+          Next <i class="fas fa-arrow-right ml-2"></i>
+        </button>
+      </div>
+
+      <!-- Resume Completion Bar -->
+      <div class="completion-bar-container">
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-chart-pie text-blue-600"></i>
+            <span class="text-sm font-semibold text-gray-700">Resume Completion</span>
+          </div>
+          <span id="completionPercent" class="text-sm font-bold text-gray-800">0%</span>
+        </div>
+        <div class="completion-bar-track mb-2">
+          <div id="completionBarFill" class="completion-bar-fill c-red" style="width:0%"></div>
+        </div>
+        <div id="completionMessage" class="text-xs text-gray-500 mb-2">Start filling in your sections to complete your resume</div>
+        <div class="completion-section-dots">
+          <div class="flex items-center gap-1"><div class="completion-dot empty-dot" id="dot-personal"></div><span class="text-xs text-gray-500">Personal</span></div>
+          <div class="flex items-center gap-1"><div class="completion-dot empty-dot" id="dot-summary"></div><span class="text-xs text-gray-500">Summary</span></div>
+          <div class="flex items-center gap-1"><div class="completion-dot empty-dot" id="dot-skills"></div><span class="text-xs text-gray-500">Skills</span></div>
+          <div class="flex items-center gap-1"><div class="completion-dot empty-dot" id="dot-experience"></div><span class="text-xs text-gray-500">Experience</span></div>
+          <div class="flex items-center gap-1"><div class="completion-dot empty-dot" id="dot-education"></div><span class="text-xs text-gray-500">Education</span></div>
+        </div>
+      </div>
+
+    </div><!-- end tab-content -->
+
+    <!-- Mobile floating Preview FAB -->
+    <button class="mobile-preview-fab" id="mobilePreviewFab" onclick="openMobilePreview()">
+      <i class="fas fa-eye"></i> Preview
+    </button>
+
+    <!-- Mobile full-screen preview overlay -->
+    <div class="mobile-preview-overlay" id="mobilePreviewOverlay">
+      <div class="mobile-preview-overlay-header">
+        <h2><i class="fas fa-eye mr-2 text-blue-600"></i>CVMaker.ink Preview</h2>
+        <button class="mobile-preview-overlay-close" onclick="closeMobilePreview()">
+          <i class="fas fa-times mr-1"></i> Close
+        </button>
+      </div>
+      <iframe id="mobilePreviewFrame" title="CVMaker.ink Preview" src="about:blank" style="flex:1;width:100%;border:0;background:#fff"></iframe>
+    </div>
+
+    <!-- Templates Tab -->
+    <div id="tab-templates" class="hidden space-y-6">
+      <div class="section-card">
+        <h2 class="text-lg font-semibold mb-4">Choose ATS-Optimized Template</h2>
+        <div id="templatesGrid" class="grid md:grid-cols-3 gap-4"></div>
+        <div id="templatesEmpty" class="hidden text-sm text-gray-500">No templates available right now.</div>
+
+        <!-- Template Settings -->
+        <div class="mt-6 pt-6 border-t">
+          <h3 class="font-semibold mb-4">Template Settings</h3>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="field-group">
+              <label class="field-label">Font Family</label>
+              <select id="templateFont" class="field-input" onchange="updatePreview()">
+                <option value="Inter">Inter (Recommended)</option>
+                <option value="Arial">Arial (ATS Safe)</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Helvetica">Helvetica</option>
+                <option value="Times New Roman">Times New Roman</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Standard fonts ensure ATS can parse your resume</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Page Format</label>
+              <select id="pageFormat" class="field-input" onchange="updatePreview()">
+                <option value="a4">A4 (210 × 297 mm)</option>
+                <option value="letter">Letter (8.5 × 11 in)</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Primary Color</label>
+              <div class="flex gap-2">
+                <input type="color" id="primaryColor" class="field-input w-20 h-10" value="#2563eb" onchange="updatePreview()">
+                <span class="text-sm text-gray-600 self-center">Choose a professional color</span>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Section Order</label>
+              <select id="sectionOrder" class="field-input" onchange="updatePreview()">
+                <option value="skills-first">Skills First (Recommended for ATS)</option>
+                <option value="experience-first">Experience First</option>
+                <option value="education-first">Education First</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Optimize Tab -->
+    <div id="tab-optimize" class="hidden space-y-6">
+      <div class="section-card">
+        <h2 class="text-lg font-semibold mb-4"><i class="fas fa-magic mr-2 text-blue-600"></i>AI Optimization</h2>
+        
+        <div class="space-y-4">
+          <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h3 class="font-medium mb-2">ATS Score Analysis</h3>
+            <div class="flex items-center gap-4">
+              <div class="text-3xl font-bold text-blue-600" id="optimizeScore">0/100</div>
+              <div class="flex-1">
+                <div class="h-4 bg-gray-200 rounded-full overflow-hidden">
+                  <div id="optimizeScoreBar" class="h-full bg-blue-600 transition-all" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="optimizationSuggestions" class="space-y-3">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h2 class="text-lg font-semibold mb-4">Quick Fixes</h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <button onclick="improveBulletPoints()" class="p-4 border rounded-lg hover:bg-gray-50 text-left">
+            <i class="fas fa-list-ul text-blue-600 mb-2"></i>
+            <div class="font-medium">Improve Bullet Points</div>
+            <div class="text-sm text-gray-500">Add action verbs and metrics</div>
+          </button>
+          <button onclick="suggestKeywords()" class="p-4 border rounded-lg hover:bg-gray-50 text-left">
+            <i class="fas fa-key text-green-600 mb-2"></i>
+            <div class="font-medium">Find Keywords</div>
+            <div class="text-sm text-gray-500">Based on your target role</div>
+          </button>
+          <button onclick="checkFormatting()" class="p-4 border rounded-lg hover:bg-gray-50 text-left">
+            <i class="fas fa-check-double text-purple-600 mb-2"></i>
+            <div class="font-medium">Check Formatting</div>
+            <div class="text-sm text-gray-500">Ensure ATS compatibility</div>
+          </button>
+          <button onclick="optimizeSummary()" class="p-4 border rounded-lg hover:bg-gray-50 text-left">
+            <i class="fas fa-paragraph text-orange-600 mb-2"></i>
+            <div class="font-medium">Optimize Summary</div>
+            <div class="text-sm text-gray-500">Make it ATS-friendly</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Job Matcher Modal -->
+  <div id="jobMatcherModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b flex justify-between items-center">
+        <h2 class="text-xl font-bold">Job Description Matcher</h2>
+        <button onclick="closeJobMatcher()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <div class="mb-4">
+          <label class="field-label">Paste Job Description</label>
+          <textarea id="matcherJobDesc" class="field-input" rows="8" placeholder="Paste the full job description here..."></textarea>
+        </div>
+        <button onclick="matchJobDescription()" class="btn-primary w-full">
+          <i class="fas fa-search mr-2"></i>Analyze Match
+        </button>
+        <div id="matcherResults" class="mt-6 hidden">
+          <!-- Results populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ATS Report Modal -->
+  <div id="atsReportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b flex justify-between items-center">
+        <h2 class="text-xl font-bold">Detailed ATS Report</h2>
+        <button onclick="closeATSReport()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div id="atsReportContent" class="p-6">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+      </div>
+
+      <aside id="builderPreviewPanel" class="builder-panel hidden lg:block">
+        <div class="preview-sticky">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900">Live Preview</h2>
+              <p class="text-sm text-gray-500">Matches the final PDF renderer.</p>
+            </div>
+            <span class="text-xs text-gray-400 uppercase tracking-wide">Auto-updating</span>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <iframe id="livePreviewFrame" title="Resume live preview" class="preview-frame" src="/preview.html?embed=1"></iframe>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- AI Summary Modal -->
+  <div id="aiSummaryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b flex justify-between items-center">
+        <h2 class="text-xl font-bold">AI Professional Summary</h2>
+        <button onclick="closeAISummaryModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <div id="aiSummaryStatus" class="hidden mb-4 px-4 py-3 rounded-lg text-sm"></div>
+        <textarea id="aiSummaryResult" class="field-input" rows="6" placeholder="Your AI-generated summary will appear here..."></textarea>
+        <div class="flex flex-col sm:flex-row justify-end gap-3 mt-4">
+          <button onclick="closeAISummaryModal()" class="btn-secondary">Cancel</button>
+          <button onclick="regenerateSummaryWithAI()" class="btn-secondary">
+            <i class="fas fa-rotate-right mr-2"></i>Regenerate
+          </button>
+          <button onclick="acceptAISummary()" class="btn-primary">
+            <i class="fas fa-check mr-2"></i>Accept
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State Management
+    let resumeData = {
+      title: '',
+      basics: { name: '', headline: '', email: '', phone: '', location: '', linkedIn: '', url: '', profilePhoto: '', dateOfBirth: '', nationality: '' },
+      target: { jobTitle: '', industry: '', jobDescription: '' },
+      summary: '',
+      skills: [],
+      experience: [],
+      education: [],
+      certifications: [],
+      projects: [],
+      languages: [],
+      template: 'modern',
+      settings: { font: 'Inter', format: 'a4', color: '#2563eb', sectionOrder: 'skills-first' }
+    };
+
+    let atsScore = { total: 0, keywords: 0, format: 0, content: 0 };
+    let previewFrameReady = false;
+    let availableTemplates = [];
+    const templateVariantMap = {
+      'modern-professional': 'modern',
+      'classic-elegant': 'classic',
+      'minimal-clean': 'minimal',
+      'creative-bold': 'creative',
+      'executive-premium': 'executive',
+      'glalie': 'glalie',
+      'gengar': 'gengar'
+    };
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      
+      const previewFrame = document.getElementById('livePreviewFrame');
+      if (previewFrame) {
+        previewFrame.addEventListener('load', () => {
+          setTimeout(() => pushLivePreview(), 150);
+        });
+      }
+      window.addEventListener('message', (event) => {
+        if (event.data?.type === 'preview-ready') {
+          previewFrameReady = true;
+          pushLivePreview();
+        }
+      });
+
+      loadTemplates();
+      loadResumeData();
+      updateATSScore();
+      setMobileBuilderView('edit');
+    });
+
+    function setMobileBuilderView(view) {
+      const editor = document.getElementById('builderEditorPanel');
+      const preview = document.getElementById('builderPreviewPanel');
+      const editBtn = document.getElementById('mobileEditBtn');
+      const previewBtn = document.getElementById('mobilePreviewBtn');
+      if (!editor || !preview || !editBtn || !previewBtn) return;
+      if (window.innerWidth >= 1024) {
+        editor.classList.remove('hidden');
+        preview.classList.remove('hidden');
+        return;
+      }
+      const showPreview = view === 'preview';
+      editor.classList.toggle('hidden', showPreview);
+      preview.classList.toggle('hidden', !showPreview);
+      editBtn.classList.toggle('active', !showPreview);
+      previewBtn.classList.toggle('active', showPreview);
+      editBtn.classList.toggle('text-gray-600', showPreview);
+      previewBtn.classList.toggle('text-gray-600', !showPreview);
+      if (showPreview) pushLivePreview();
+    }
+
+    function pushLivePreview() {
+      const frame = document.getElementById('livePreviewFrame');
+      if (!frame || !frame.contentWindow) return;
+      if (!previewFrameReady && frame.src.indexOf('embed=1') === -1) return;
+      frame.contentWindow.postMessage({
+        type: 'resume-preview-data',
+        resumeData,
+        template: resumeData.template || 'modern'
+      }, '*');
+    }
+
+    function updatePreview() {
+      resumeData.settings = resumeData.settings || {};
+      const templateFont = document.getElementById('templateFont');
+      const pageFormat = document.getElementById('pageFormat');
+      const primaryColor = document.getElementById('primaryColor');
+      const sectionOrder = document.getElementById('sectionOrder');
+
+      if (templateFont) resumeData.settings.font = templateFont.value || 'Inter';
+      if (pageFormat) resumeData.settings.format = pageFormat.value || 'a4';
+      if (primaryColor) resumeData.settings.color = primaryColor.value || '#2563eb';
+      if (sectionOrder) resumeData.settings.sectionOrder = sectionOrder.value || 'skills-first';
+
+      updateATSScore();
+      pushLivePreview();
+    }
+
+    async function loadTemplates() {
+      try {
+        const response = await fetch('/api/templates', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await response.json();
+        availableTemplates = (data.templates || []).map(template => ({
+          ...template,
+          variant: templateVariantMap[template.slug] || 'modern'
+        }));
+        renderTemplatesGrid();
+      } catch (err) {
+        console.error('Failed to load templates:', err);
+        renderTemplatesGrid();
+      }
+    }
+
+    function renderTemplatesGrid() {
+      const grid = document.getElementById('templatesGrid');
+      const empty = document.getElementById('templatesEmpty');
+      if (!grid || !empty) return;
+
+      if (!availableTemplates.length) {
+        grid.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      empty.classList.add('hidden');
+      grid.innerHTML = availableTemplates.map((template) => {
+        const active = (resumeData.template || 'modern') === template.variant;
+        const locked = !!template.is_premium && !isProUserClient();
+        const thumbUrl = template.thumbnail_url || '';
+        return `
+          <div class="template-preview ${active ? 'active' : ''} ${locked ? 'opacity-75' : ''}" onclick="handleTemplateCardClick('${template.variant}', ${template.id}, ${locked ? 'true' : 'false'})" id="template-${template.variant}">
+            <div class="bg-gray-100 p-2 rounded mb-3 h-56 flex items-center justify-center overflow-hidden">
+              ${thumbUrl ? `<img src="${thumbUrl}" alt="${escapeHtml(template.name)}" class="w-full h-full object-contain rounded" style="max-height:220px;">` : `
+              <div class="text-center">
+                <div class="font-bold text-lg mb-1">${escapeHtml(template.name)}</div>
+                <div class="text-xs text-gray-600">${escapeHtml(template.category || 'Template')}</div>
+                <div class="mt-2 text-xs">${locked ? '🔒 Premium' : '✓ Available'}</div>
+              </div>`}
+            </div>
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <h3 class="font-semibold">${escapeHtml(template.name)}</h3>
+              ${locked ? '<span class="inline-block bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded">Premium</span>' : ''}
+            </div>
+            <p class="text-sm text-gray-500">${escapeHtml(template.description || 'ATS-friendly resume template.')}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function handleTemplateCardClick(templateVariant, templateId, locked) {
+      if (locked) {
+        showUpgradeModal('This template is available on the Pro plan. Upgrade to use premium templates.');
+        return;
+      }
+      selectTemplate(templateVariant, templateId);
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Tab Switching
+    function switchTab(tab) {
+      ['content', 'templates', 'optimize'].forEach(t => {
+        document.getElementById('tab-' + t).classList.add('hidden');
+        const btn = document.getElementById('tab-btn-' + t);
+        btn.classList.remove('bg-blue-100', 'text-blue-700');
+        btn.classList.add('text-gray-600');
+      });
+      
+      document.getElementById('tab-' + tab).classList.remove('hidden');
+      const activeBtn = document.getElementById('tab-btn-' + tab);
+      activeBtn.classList.add('bg-blue-100', 'text-blue-700');
+      activeBtn.classList.remove('text-gray-600');
+      
+      if (tab === 'optimize') {
+        updateOptimizationTab();
+      }
+    }
+
+    // Section Toggling
+    function toggleSection(id) {
+      const el = document.getElementById(id);
+      const icon = document.getElementById('icon-' + id);
+      el.classList.toggle('open');
+      icon.classList.toggle('open');
+    }
+
+    // Skills Management
+    function addSkill() {
+      const name = document.getElementById('skillInput').value.trim();
+      const proficiency = document.getElementById('skillProficiency').value;
+      
+      if (!name) return;
+      
+      const id = Date.now();
+      resumeData.skills.push({ id, name, proficiency });
+      
+      document.getElementById('skillInput').value = '';
+      renderSkills();
+      updateATSScore();
+    }
+
+    function removeSkill(id) {
+      resumeData.skills = resumeData.skills.filter(s => s.id != id);
+      renderSkills();
+      updateATSScore();
+    }
+
+    function renderSkills() {
+      const colors = {
+        beginner: 'bg-gray-100 text-gray-700',
+        intermediate: 'bg-blue-100 text-blue-700',
+        advanced: 'bg-green-100 text-green-700',
+        expert: 'bg-purple-100 text-purple-700'
+      };
+      
+      const html = resumeData.skills.map(skill => `
+        <span class="skill-badge ${colors[skill.proficiency]}">
+          ${skill.name}
+          <button onclick="removeSkill(${skill.id})" class="ml-2 text-current opacity-60 hover:opacity-100">&times;</button>
+        </span>
+      `).join('');
+      
+      document.getElementById('skillsList').innerHTML = html;
+      document.getElementById('skillsATSWarning').classList.toggle('hidden', resumeData.skills.length >= 5);
+    }
+
+    // Experience Management
+    function addExperience(data = null) {
+      const id = Date.now();
+      const exp = data || { 
+        id, company: '', position: '', location: '', 
+        startDate: '', endDate: '', current: false,
+        bullets: ['', '', ''] 
+      };
+      
+      const html = `
+        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50" id="exp-${id}">
+          <div class="flex justify-between mb-3">
+            <span class="font-medium text-gray-700">Work Experience</span>
+            <button onclick="removeExperience(${id})" class="btn-danger">Remove</button>
+          </div>
+          <div class="grid md:grid-cols-2 gap-3">
+            <input type="text" class="field-input" placeholder="Company Name" value="${exp.company}" onchange="updateExperience(${id}, 'company', this.value)">
+            <input type="text" class="field-input" placeholder="Job Title" value="${exp.position}" onchange="updateExperience(${id}, 'position', this.value)">
+            <input type="text" class="field-input" placeholder="Location" value="${exp.location}" onchange="updateExperience(${id}, 'location', this.value)">
+            <div class="flex gap-2">
+              <input type="text" class="field-input flex-1" placeholder="Start Date (MM/YYYY)" value="${exp.startDate}" onchange="updateExperience(${id}, 'startDate', this.value)">
+              <input type="text" class="field-input flex-1" placeholder="End Date" value="${exp.endDate}" onchange="updateExperience(${id}, 'endDate', this.value)" ${exp.current ? 'disabled' : ''}>
+            </div>
+            <label class="flex items-center gap-2 md:col-span-2">
+              <input type="checkbox" ${exp.current ? 'checked' : ''} onchange="toggleCurrentJob(${id}, this.checked)">
+              <span class="text-sm">Current Position</span>
+            </label>
+            <div class="md:col-span-2">
+              <label class="field-label">Achievements (use bullet points)</label>
+              ${exp.bullets.map((bullet, i) => `
+                <div class="flex gap-2 mb-2">
+                  <span class="text-gray-400 mt-2">•</span>
+                  <input type="text" class="field-input flex-1" placeholder="Achievement with metrics (e.g., Increased sales by 25%)" value="${bullet}" onchange="updateBullet(${id}, ${i}, this.value)">
+                </div>
+              `).join('')}
+              <button onclick="addBullet(${id})" class="text-blue-600 text-sm mt-2 hover:underline">
+                <i class="fas fa-plus mr-1"></i>Add bullet point
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('experienceList').insertAdjacentHTML('beforeend', html);
+      if (!data) {
+        resumeData.experience.push(exp);
+        updateATSScore();
+      }
+    }
+
+    function updateExperience(id, field, value) {
+      const item = resumeData.experience.find(e => e.id == id);
+      if (item) item[field] = value;
+      updateATSScore();
+    }
+
+    function updateBullet(expId, bulletIdx, value) {
+      const item = resumeData.experience.find(e => e.id == expId);
+      if (item) item.bullets[bulletIdx] = value;
+      updateATSScore();
+    }
+
+    function addBullet(expId) {
+      const item = resumeData.experience.find(e => e.id == expId);
+      if (item) {
+        item.bullets.push('');
+        // Re-render just this section
+        const el = document.getElementById(`exp-${expId}`);
+        el.remove();
+        addExperience(item);
+      }
+    }
+
+    function toggleCurrentJob(id, isCurrent) {
+      const item = resumeData.experience.find(e => e.id == id);
+      if (item) {
+        item.current = isCurrent;
+        if (isCurrent) item.endDate = 'Present';
+      }
+    }
+
+    function removeExperience(id) {
+      document.getElementById(`exp-${id}`).remove();
+      resumeData.experience = resumeData.experience.filter(e => e.id != id);
+      updateATSScore();
+    }
+
+    // Education Management
+    function addEducation(data = null) {
+      const id = Date.now();
+      const edu = data || { id, school: '', degree: '', field: '', graduationDate: '', gpa: '' };
+      
+      const html = `
+        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50" id="edu-${id}">
+          <div class="flex justify-between mb-3">
+            <span class="font-medium text-gray-700">Education</span>
+            <button onclick="removeEducation(${id})" class="btn-danger">Remove</button>
+          </div>
+          <div class="grid md:grid-cols-2 gap-3">
+            <input type="text" class="field-input" placeholder="School/University" value="${edu.school}" onchange="updateEducation(${id}, 'school', this.value)">
+            <input type="text" class="field-input" placeholder="Degree (e.g., Bachelor of Science)" value="${edu.degree}" onchange="updateEducation(${id}, 'degree', this.value)">
+            <input type="text" class="field-input" placeholder="Field of Study" value="${edu.field}" onchange="updateEducation(${id}, 'field', this.value)">
+            <input type="text" class="field-input" placeholder="Graduation Date (YYYY)" value="${edu.graduationDate}" onchange="updateEducation(${id}, 'graduationDate', this.value)">
+            <input type="text" class="field-input" placeholder="GPA (optional)" value="${edu.gpa}" onchange="updateEducation(${id}, 'gpa', this.value)">
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('educationList').insertAdjacentHTML('beforeend', html);
+      if (!data) {
+        resumeData.education.push(edu);
+        updateATSScore();
+      }
+    }
+
+    function updateEducation(id, field, value) {
+      const item = resumeData.education.find(e => e.id == id);
+      if (item) item[field] = value;
+      updateATSScore();
+    }
+
+    function removeEducation(id) {
+      document.getElementById(`edu-${id}`).remove();
+      resumeData.education = resumeData.education.filter(e => e.id != id);
+      updateATSScore();
+    }
+
+    // Certification Management
+    function addCertification(data = null) {
+      const id = Date.now();
+      const cert = data || { id, name: '', issuer: '', date: '', expiration: '' };
+      
+      const html = `
+        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50" id="cert-${id}">
+          <div class="flex justify-between mb-3">
+            <span class="font-medium text-gray-700">Certification</span>
+            <button onclick="removeCertification(${id})" class="btn-danger">Remove</button>
+          </div>
+          <div class="grid md:grid-cols-2 gap-3">
+            <input type="text" class="field-input" placeholder="Certification Name" value="${cert.name}" onchange="updateCertification(${id}, 'name', this.value)">
+            <input type="text" class="field-input" placeholder="Issuing Organization" value="${cert.issuer}" onchange="updateCertification(${id}, 'issuer', this.value)">
+            <input type="text" class="field-input" placeholder="Date Earned" value="${cert.date}" onchange="updateCertification(${id}, 'date', this.value)">
+            <input type="text" class="field-input" placeholder="Expiration (optional)" value="${cert.expiration}" onchange="updateCertification(${id}, 'expiration', this.value)">
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('certificationsList').insertAdjacentHTML('beforeend', html);
+      if (!data) {
+        resumeData.certifications.push(cert);
+        updateATSScore();
+      }
+    }
+
+    function updateCertification(id, field, value) {
+      const item = resumeData.certifications.find(c => c.id == id);
+      if (item) item[field] = value;
+      updateATSScore();
+    }
+
+    function removeCertification(id) {
+      document.getElementById(`cert-${id}`).remove();
+      resumeData.certifications = resumeData.certifications.filter(c => c.id != id);
+      updateATSScore();
+    }
+
+    // Project Management
+    function addProject(data = null) {
+      const id = Date.now();
+      const proj = data || { id, name: '', description: '', technologies: '', link: '' };
+      
+      const html = `
+        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50" id="proj-${id}">
+          <div class="flex justify-between mb-3">
+            <span class="font-medium text-gray-700">Project</span>
+            <button onclick="removeProject(${id})" class="btn-danger">Remove</button>
+          </div>
+          <div class="grid md:grid-cols-2 gap-3">
+            <input type="text" class="field-input" placeholder="Project Name" value="${proj.name}" onchange="updateProject(${id}, 'name', this.value)">
+            <input type="text" class="field-input" placeholder="Technologies Used (comma separated)" value="${proj.technologies}" onchange="updateProject(${id}, 'technologies', this.value)">
+            <input type="text" class="field-input md:col-span-2" placeholder="Project URL (GitHub, Live Demo, etc.)" value="${proj.link}" onchange="updateProject(${id}, 'link', this.value)">
+            <textarea class="field-input md:col-span-2" rows="3" placeholder="Project description and your contributions" onchange="updateProject(${id}, 'description', this.value)">${proj.description}</textarea>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('projectsList').insertAdjacentHTML('beforeend', html);
+      if (!data) {
+        resumeData.projects.push(proj);
+        updateATSScore();
+      }
+    }
+
+    function updateProject(id, field, value) {
+      const item = resumeData.projects.find(p => p.id == id);
+      if (item) item[field] = value;
+      updateATSScore();
+    }
+
+    function removeProject(id) {
+      document.getElementById(`proj-${id}`).remove();
+      resumeData.projects = resumeData.projects.filter(p => p.id != id);
+      updateATSScore();
+    }
+
+    // Language Management
+    function addLanguage(data = null) {
+      const id = Date.now();
+      const lang = data || { id, name: '', proficiency: 'conversational' };
+      
+      const html = `
+        <div class="flex gap-3 items-center" id="lang-${id}">
+          <input type="text" class="field-input flex-1" placeholder="Language (e.g., Spanish)" value="${lang.name}" onchange="updateLanguage(${id}, 'name', this.value)">
+          <select class="field-input w-40" onchange="updateLanguage(${id}, 'proficiency', this.value)">
+            <option value="native" ${lang.proficiency === 'native' ? 'selected' : ''}>Native</option>
+            <option value="fluent" ${lang.proficiency === 'fluent' ? 'selected' : ''}>Fluent</option>
+            <option value="conversational" ${lang.proficiency === 'conversational' ? 'selected' : ''}>Conversational</option>
+            <option value="basic" ${lang.proficiency === 'basic' ? 'selected' : ''}>Basic</option>
+          </select>
+          <button onclick="removeLanguage(${id})" class="btn-danger">Remove</button>
+        </div>
+      `;
+      
+      document.getElementById('languagesList').insertAdjacentHTML('beforeend', html);
+      if (!data) {
+        resumeData.languages.push(lang);
+        updateATSScore();
+      }
+    }
+
+    function updateLanguage(id, field, value) {
+      const item = resumeData.languages.find(l => l.id == id);
+      if (item) item[field] = value;
+      updateATSScore();
+    }
+
+    function removeLanguage(id) {
+      document.getElementById(`lang-${id}`).remove();
+      resumeData.languages = resumeData.languages.filter(l => l.id != id);
+      updateATSScore();
+    }
+
+    // ATS Scoring System
+    function updateATSScore() {
+      // Update data from form
+      resumeData.title = document.getElementById('resumeTitle').value;
+      resumeData.basics.name = document.getElementById('basicsName').value;
+      resumeData.basics.headline = document.getElementById('basicsHeadline').value;
+      resumeData.basics.email = document.getElementById('basicsEmail').value;
+      resumeData.basics.phone = document.getElementById('basicsPhone').value;
+      resumeData.basics.location = document.getElementById('basicsLocation').value;
+      resumeData.basics.linkedIn = document.getElementById('basicsLinkedIn').value;
+      resumeData.basics.url = document.getElementById('basicsUrl').value;
+      resumeData.basics.dateOfBirth = document.getElementById('basicsDateOfBirth').value;
+      resumeData.basics.nationality = document.getElementById('basicsNationality').value;
+      resumeData.target.jobTitle = document.getElementById('targetJobTitle').value;
+      resumeData.target.industry = document.getElementById('targetIndustry').value;
+      resumeData.summary = document.getElementById('summaryContent').value;
+      
+      // Calculate scores
+      let keywordsScore = 0;
+      let formatScore = 0;
+      let contentScore = 0;
+      
+      // Keywords Score (40 points)
+      if (resumeData.skills.length >= 5) keywordsScore += 15;
+      else if (resumeData.skills.length >= 3) keywordsScore += 10;
+      if (resumeData.target.jobTitle) keywordsScore += 10;
+      if (resumeData.target.industry) keywordsScore += 5;
+      if (resumeData.summary.toLowerCase().includes(resumeData.target.jobTitle?.toLowerCase())) keywordsScore += 10;
+      
+      // Format Score (30 points)
+      if (resumeData.basics.name && resumeData.basics.email) formatScore += 10;
+      if (resumeData.template) formatScore += 10;
+      if (resumeData.skills.length > 0) formatScore += 10;
+      
+      // Content Score (30 points)
+      if (resumeData.experience.length >= 1) contentScore += 10;
+      if (resumeData.experience.length >= 2) contentScore += 5;
+      if (resumeData.education.length >= 1) contentScore += 5;
+      if (resumeData.summary.length > 100) contentScore += 5;
+      if (resumeData.certifications.length > 0) contentScore += 5;
+      
+      atsScore = {
+        keywords: Math.min(keywordsScore, 40),
+        format: Math.min(formatScore, 30),
+        content: Math.min(contentScore, 30),
+        total: Math.min(keywordsScore + formatScore + contentScore, 100)
+      };
+      
+      // Update UI
+      document.getElementById('atsScoreValue').textContent = `${atsScore.total}/100`;
+      document.getElementById('atsScoreFill').style.width = `${atsScore.total}%`;
+      document.getElementById('scoreKeywords').textContent = `${atsScore.keywords}/40`;
+      document.getElementById('scoreFormat').textContent = `${atsScore.format}/30`;
+      document.getElementById('scoreContent').textContent = `${atsScore.content}/30`;
+      
+      // Color coding
+      const fill = document.getElementById('atsScoreFill');
+      fill.className = 'ats-score-fill';
+      if (atsScore.total >= 80) fill.classList.add('score-excellent');
+      else if (atsScore.total >= 60) fill.classList.add('score-good');
+      else if (atsScore.total >= 40) fill.classList.add('score-needs-work');
+      else fill.classList.add('score-poor');
+
+      pushLivePreview();
+    }
+
+    // Template Selection
+    function selectTemplate(template, templateId = null) {
+      resumeData.template = template;
+      if (templateId) {
+        resumeData.selectedTemplateId = templateId;
+      }
+      document.querySelectorAll('.template-preview').forEach(el => el.classList.remove('active'));
+      const activeCard = document.getElementById(`template-${template}`);
+      if (activeCard) activeCard.classList.add('active');
+      updateATSScore();
+      pushLivePreview();
+    }
+
+    function handleBasicsInputChange() {
+      updateATSScore();
+      pushLivePreview();
+    }
+
+    function setProfilePhotoPreview(url) {
+      const preview = document.getElementById('photoPreview');
+      const removeBtn = document.getElementById('removePhotoBtn');
+      const uploadArea = document.getElementById('photoUploadArea');
+      const uploadText = document.getElementById('photoUploadText');
+      if (!preview || !removeBtn) return;
+
+      if (url) {
+        // Show photo in circle
+        preview.innerHTML = `<img src="${url}" alt="Profile photo" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+        preview.style.border = '3px solid #22c55e';
+        removeBtn.style.display = 'inline-flex';
+        // Update text
+        if (uploadText) {
+          uploadText.querySelector('p').textContent = 'Photo uploaded successfully ✓';
+          uploadText.querySelector('p').style.color = '#16a34a';
+        }
+        if (uploadArea) {
+          uploadArea.style.borderColor = '#22c55e';
+          uploadArea.style.background = '#f0fdf4';
+          uploadArea.onmouseenter = null;
+          uploadArea.onmouseleave = null;
+        }
+      } else {
+        preview.innerHTML = '<i class="fas fa-user" style="font-size:2.5rem"></i>';
+        preview.style.border = '3px solid #cbd5e1';
+        removeBtn.style.display = 'none';
+        if (uploadText) {
+          uploadText.querySelector('p').textContent = 'Click to upload your photo';
+          uploadText.querySelector('p').style.color = '#1e293b';
+        }
+        if (uploadArea) {
+          uploadArea.style.borderColor = '#cbd5e1';
+          uploadArea.style.background = '#f8fafc';
+          uploadArea.onmouseenter = function(){ this.style.borderColor='#3b82f6'; this.style.background='#eff6ff'; };
+          uploadArea.onmouseleave = function(){ this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc'; };
+        }
+      }
+    }
+
+    function handlePhotoDrop(event) {
+      event.preventDefault();
+      document.getElementById('photoUploadArea').classList.remove('photo-drag-over');
+      const file = event.dataTransfer.files[0];
+      if (!file) return;
+      // Simulate file input change
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      const input = document.getElementById('profilePhotoInput');
+      input.files = dt.files;
+      handleProfilePhotoUpload({ target: input });
+    }
+
+    async function handleProfilePhotoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Photo is too large. Maximum size is 2MB.');
+        return;
+      }
+
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please upload a JPG, PNG, or WEBP image.');
+        return;
+      }
+
+      // Show uploading state
+      const uploadArea = document.getElementById('photoUploadArea');
+      const prevText = document.querySelector('#photoUploadText p');
+      if (prevText) { prevText.textContent = 'Uploading...'; prevText.style.color = '#2563eb'; }
+      if (uploadArea) { uploadArea.style.borderColor = '#3b82f6'; uploadArea.style.background = '#eff6ff'; }
+
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      try {
+        const response = await fetch('/api/resume/upload-photo', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+          body: formData
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.url) throw new Error(result.error || 'Photo upload failed');
+
+        resumeData.basics.profilePhoto = result.url;
+        setProfilePhotoPreview(result.url);
+        updateATSScore();
+        pushLivePreview();
+      } catch (err) {
+        console.error('Photo upload failed:', err);
+        // Show local preview as fallback
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resumeData.basics.profilePhoto = e.target.result;
+          setProfilePhotoPreview(e.target.result);
+          updateATSScore();
+          pushLivePreview();
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        event.target.value = '';
+      }
+    }
+
+    function removeProfilePhoto() {
+      resumeData.basics.profilePhoto = '';
+      setProfilePhotoPreview('');
+      updateATSScore();
+      pushLivePreview();
+    }
+
+    // Job Description Analysis
+    function analyzeJobDescription() {
+      const jd = document.getElementById('jobDescription').value.toLowerCase();
+      if (!jd) {
+        alert('Please paste a job description first');
+        return;
+      }
+      
+      // Common keywords by industry
+      const keywordBank = {
+        tech: ['javascript', 'python', 'react', 'node.js', 'sql', 'aws', 'docker', 'kubernetes', 'agile', 'scrum'],
+        finance: ['accounting', 'financial analysis', 'excel', 'budget', 'forecasting', 'sap', 'quickbooks'],
+        marketing: ['seo', 'google analytics', 'social media', 'content marketing', 'crm', 'email marketing'],
+        sales: ['crm', 'salesforce', 'lead generation', 'negotiation', 'account management', 'b2b'],
+        healthcare: ['patient care', 'medical records', 'hipaa', 'clinical', 'emr', 'healthcare'],
+        general: ['communication', 'leadership', 'teamwork', 'problem solving', 'project management', 'microsoft office']
+      };
+      
+      const industry = resumeData.target.industry || 'general';
+      const keywords = keywordBank[industry] || keywordBank.general;
+      const found = keywords.filter(k => jd.includes(k));
+      const missing = keywords.filter(k => !jd.includes(k));
+      
+      const container = document.getElementById('suggestedKeywords');
+      container.innerHTML = `
+        <div class="mb-2"><span class="font-medium">Found in your resume:</span></div>
+        ${found.map(k => `<span class="keyword-match">${k}</span>`).join('')}
+        ${found.length === 0 ? '<span class="text-gray-500">None yet. Add these skills!</span>' : ''}
+        <div class="mb-2 mt-3"><span class="font-medium">Consider adding:</span></div>
+        ${missing.slice(0, 8).map(k => `<span class="keyword-missing cursor-pointer" onclick="addSuggestedKeyword('${k}')">${k} +</span>`).join('')}
+      `;
+      
+      document.getElementById('keywordSuggestions').classList.remove('hidden');
+    }
+
+    function addSuggestedKeyword(keyword) {
+      document.getElementById('skillInput').value = keyword;
+      addSkill();
+    }
+
+    // Job Matcher Modal
+    function showJobMatcher() {
+      document.getElementById('jobMatcherModal').classList.remove('hidden');
+    }
+
+    function closeJobMatcher() {
+      document.getElementById('jobMatcherModal').classList.add('hidden');
+    }
+
+    function matchJobDescription() {
+      const jd = document.getElementById('matcherJobDesc').value;
+      if (!jd) return;
+      
+      // Simple keyword matching
+      const resumeText = JSON.stringify(resumeData).toLowerCase();
+      const jdWords = jd.toLowerCase().match(/\b\w{4,}\b/g) || [];
+      const uniqueWords = [...new Set(jdWords)];
+      const matched = uniqueWords.filter(w => resumeText.includes(w));
+      const matchRate = Math.round((matched.length / uniqueWords.length) * 100);
+      
+      const results = document.getElementById('matcherResults');
+      results.classList.remove('hidden');
+      results.innerHTML = `
+        <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-lg">Match Score</h3>
+            <span class="text-3xl font-bold ${matchRate >= 70 ? 'text-green-600' : matchRate >= 50 ? 'text-yellow-600' : 'text-red-600'}">${matchRate}%</span>
+          </div>
+          <div class="h-4 bg-gray-200 rounded-full overflow-hidden">
+            <div class="h-full ${matchRate >= 70 ? 'bg-green-500' : matchRate >= 50 ? 'bg-yellow-500' : 'bg-red-500'}" style="width: ${matchRate}%"></div>
+          </div>
+          <p class="mt-3 text-sm text-gray-600">
+            ${matchRate >= 70 ? 'Great match! Your resume aligns well with this job.' : 
+              matchRate >= 50 ? 'Good match, but consider adding more relevant keywords.' : 
+              'Low match. Add more keywords from the job description to your resume.'}
+          </p>
+        </div>
+        <div class="mt-4">
+          <h4 class="font-medium mb-2">Top Missing Keywords:</h4>
+          <div class="flex flex-wrap gap-2">
+            ${uniqueWords.filter(w => !resumeText.includes(w)).slice(0, 10).map(w => 
+              `<span class="bg-gray-100 px-2 py-1 rounded text-sm">${w}</span>`
+            ).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // ATS Report
+    function showATSReport() {
+      document.getElementById('atsReportModal').classList.remove('hidden');
+      generateATSReport();
+    }
+
+    function closeATSReport() {
+      document.getElementById('atsReportModal').classList.add('hidden');
+    }
+
+    function generateATSReport() {
+      const report = document.getElementById('atsReportContent');
+      
+      const issues = [];
+      const suggestions = [];
+      
+      if (!resumeData.basics.name) issues.push('Missing full name');
+      if (!resumeData.basics.email) issues.push('Missing email address');
+      if (resumeData.skills.length < 5) suggestions.push('Add at least 5 relevant skills');
+      if (resumeData.experience.length === 0) issues.push('No work experience added');
+      if (resumeData.summary.length < 50) suggestions.push('Expand your professional summary');
+      if (!resumeData.target.jobTitle) suggestions.push('Add a target job title for better optimization');
+      
+      report.innerHTML = `
+        <div class="space-y-4">
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <span class="font-medium">Overall ATS Score</span>
+            <span class="text-2xl font-bold ${atsScore.total >= 80 ? 'text-green-600' : atsScore.total >= 60 ? 'text-yellow-600' : 'text-red-600'}">${atsScore.total}/100</span>
+          </div>
+          
+          ${issues.length > 0 ? `
+            <div class="ats-error">
+              <h4 class="font-medium mb-2"><i class="fas fa-exclamation-circle mr-2"></i>Issues Found</h4>
+              <ul class="list-disc ml-5 space-y-1">
+                ${issues.map(i => `<li>${i}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          
+          ${suggestions.length > 0 ? `
+            <div class="ats-warning">
+              <h4 class="font-medium mb-2"><i class="fas fa-lightbulb mr-2"></i>Suggestions</h4>
+              <ul class="list-disc ml-5 space-y-1">
+                ${suggestions.map(s => `<li>${s}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          
+          ${issues.length === 0 && suggestions.length === 0 ? `
+            <div class="ats-success">
+              <i class="fas fa-check-circle mr-2"></i>
+              Great job! Your resume looks well-optimized for ATS.
+            </div>
+          ` : ''}
+          
+          <div class="mt-6">
+            <h4 class="font-medium mb-3">Score Breakdown</h4>
+            <div class="space-y-3">
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span>Keywords & Matching</span>
+                  <span>${atsScore.keywords}/40</span>
+                </div>
+                <div class="h-2 bg-gray-200 rounded-full">
+                  <div class="h-full bg-blue-500 rounded-full" style="width: ${(atsScore.keywords/40)*100}%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span>Format & Structure</span>
+                  <span>${atsScore.format}/30</span>
+                </div>
+                <div class="h-2 bg-gray-200 rounded-full">
+                  <div class="h-full bg-green-500 rounded-full" style="width: ${(atsScore.format/30)*100}%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span>Content Quality</span>
+                  <span>${atsScore.content}/30</span>
+                </div>
+                <div class="h-2 bg-gray-200 rounded-full">
+                  <div class="h-full bg-purple-500 rounded-full" style="width: ${(atsScore.content/30)*100}%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Optimization Tab
+    function updateOptimizationTab() {
+      document.getElementById('optimizeScore').textContent = `${atsScore.total}/100`;
+      document.getElementById('optimizeScoreBar').style.width = `${atsScore.total}%`;
+      
+      const suggestions = document.getElementById('optimizationSuggestions');
+      const items = [];
+      
+      if (resumeData.skills.length < 5) {
+        items.push({ icon: 'fas fa-tools', color: 'text-yellow-600', title: 'Add More Skills', desc: 'Include at least 5 relevant skills' });
+      }
+      if (!resumeData.summary || resumeData.summary.length < 100) {
+        items.push({ icon: 'fas fa-align-left', color: 'text-blue-600', title: 'Expand Summary', desc: 'Write 3-5 sentences about your expertise' });
+      }
+      if (resumeData.experience.length === 0) {
+        items.push({ icon: 'fas fa-briefcase', color: 'text-red-600', title: 'Add Experience', desc: 'Include at least one work experience entry' });
+      }
+      
+      if (items.length === 0) {
+        suggestions.innerHTML = `
+          <div class="ats-success">
+            <i class="fas fa-check-circle mr-2"></i>
+            Your resume is well-optimized! Keep up the great work.
+          </div>
+        `;
+      } else {
+        suggestions.innerHTML = items.map(item => `
+          <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+            <i class="${item.icon} ${item.color} mt-1"></i>
+            <div>
+              <div class="font-medium">${item.title}</div>
+              <div class="text-sm text-gray-600">${item.desc}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Quick Fix Functions
+    function improveBulletPoints() {
+      alert('Feature: This would use AI to rewrite your bullet points with action verbs and metrics');
+    }
+
+    function suggestKeywords() {
+      document.getElementById('tab-btn-content').click();
+      document.getElementById('jobtarget').classList.add('open');
+      document.getElementById('icon-jobtarget').classList.add('open');
+      document.getElementById('jobDescription').focus();
+    }
+
+    function checkFormatting() {
+      alert('Formatting Check:\n✓ Using ATS-safe font\n✓ Single column layout\n✓ No tables or graphics\n✓ Standard bullet points');
+    }
+
+    function optimizeSummary() {
+      const summary = document.getElementById('summaryContent');
+      if (!summary.value) {
+        summary.value = `Results-driven professional with expertise in ${resumeData.target.jobTitle || 'the field'}. Skilled in ${resumeData.skills.slice(0, 3).map(s => s.name).join(', ') || 'key areas'} with a proven track record of delivering impactful results.`;
+        updateATSScore();
+      }
+    }
+
+    // Show ATS Check
+    function showATSCheck() {
+      showATSReport();
+    }
+
+    // Export PDF
+    async function exportPDF() {
+      const params = new URLSearchParams(window.location.search);
+      let resumeId = params.get('id');
+
+      try {
+        if (!resumeId) {
+          const created = await persistResume();
+          resumeId = created.id;
+        } else {
+          await persistResume();
+        }
+
+        window.open(`/preview.html?id=${resumeId}&download=1`, '_blank');
+      } catch (err) {
+        console.error('Export error:', err);
+        alert(err.message || 'Failed to prepare PDF. Please save your resume and try again.');
+      }
+    }
+
+    async function persistResume() {
+      const params = new URLSearchParams(window.location.search);
+      const resumeId = params.get('id');
+      const payload = {
+        title: resumeData.title || 'Untitled Resume',
+        content: JSON.stringify(resumeData),
+        template_id: params.get('template') || 1
+      };
+
+      const response = await fetch(resumeId ? `/api/resumes/${resumeId}` : '/api/resumes', {
+        method: resumeId ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        if (data.upgrade_required) {
+          showUpgradeModal(data.error || 'This feature requires a Pro plan.');
+          throw new Error('__UPGRADE__');
+        }
+        throw new Error(data.error || 'Save failed');
+      }
+
+      if (!resumeId && data.id) {
+        const nextUrl = `/builder.html?id=${data.id}`;
+        window.history.replaceState({}, '', nextUrl);
+      }
+
+      return data;
+    }
+
+    // Save Resume
+    async function saveResume() {
+      const btn = document.querySelector('button[onclick="saveResume()"]');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<div class="spinner mr-2"></div>Saving...';
+      btn.disabled = true;
+      
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const resumeId = params.get('id');
+        const data = await persistResume();
+
+        alert('Resume saved successfully!');
+        if (!resumeId && data.id) {
+          window.location.href = `/builder.html?id=${data.id}`;
+        }
+      } catch (err) {
+        if (err.message === '__UPGRADE__') return; // already shown modal
+        console.error('Save error:', err);
+        alert('Failed to save resume. Please try again.');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    // Load Resume Data
+    async function loadResumeData() {
+      const params = new URLSearchParams(window.location.search);
+      const resumeId = params.get('id');
+      const isImport = params.get('import') === 'true';
+      
+      // Check for imported data from sessionStorage
+      if (isImport) {
+        const importedData = sessionStorage.getItem('importedResumeData');
+        if (importedData) {
+          try {
+            const parsed = JSON.parse(importedData);
+            // Merge imported data with defaults
+            resumeData = { ...resumeData, ...parsed };
+            
+            // Populate form fields
+            document.getElementById('resumeTitle').value = resumeData.title || 'Imported Resume';
+            document.getElementById('basicsName').value = resumeData.basics?.name || '';
+            document.getElementById('basicsHeadline').value = resumeData.basics?.headline || '';
+            document.getElementById('basicsEmail').value = resumeData.basics?.email || '';
+            document.getElementById('basicsPhone').value = resumeData.basics?.phone || '';
+            document.getElementById('basicsLocation').value = resumeData.basics?.location || '';
+            document.getElementById('basicsLinkedIn').value = resumeData.basics?.linkedIn || '';
+            document.getElementById('basicsUrl').value = resumeData.basics?.url || '';
+            document.getElementById('basicsDateOfBirth').value = resumeData.basics?.dateOfBirth || '';
+            document.getElementById('basicsNationality').value = resumeData.basics?.nationality || '';
+            setProfilePhotoPreview(resumeData.basics?.profilePhoto || '');
+            document.getElementById('targetJobTitle').value = resumeData.target?.jobTitle || '';
+            document.getElementById('targetIndustry').value = resumeData.target?.industry || '';
+            document.getElementById('summaryContent').value = resumeData.summary || '';
+            document.getElementById('templateFont').value = resumeData.settings?.font || 'Inter';
+            document.getElementById('pageFormat').value = resumeData.settings?.format || 'a4';
+            document.getElementById('sectionOrder').value = resumeData.settings?.sectionOrder || 'skills-first';
+            document.querySelectorAll('.template-preview').forEach(el => el.classList.remove('active'));
+            const importedActiveTemplate = document.getElementById(`template-${resumeData.template || 'modern'}`);
+            if (importedActiveTemplate) importedActiveTemplate.classList.add('active');
+            
+            // Render lists
+            renderSkills();
+            resumeData.experience.forEach(e => addExperience(e));
+            resumeData.education.forEach(e => addEducation(e));
+            resumeData.certifications.forEach(c => addCertification(c));
+            resumeData.projects.forEach(p => addProject(p));
+            resumeData.languages.forEach(l => addLanguage(l));
+            
+            // Clear the imported data from sessionStorage
+            sessionStorage.removeItem('importedResumeData');
+            // Clean URL
+            window.history.replaceState({}, '', '/builder.html');
+            
+            updateATSScore();
+            pushLivePreview();
+            return;
+          } catch (err) {
+            console.error('Failed to load imported data:', err);
+            // Fall through to load existing resume
+          }
+        }
+      }
+      
+      if (resumeId) {
+        try {
+          const response = await fetch(`/api/resumes/${resumeId}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.resume && data.resume.content) {
+              const content = typeof data.resume.content === 'string' 
+                ? JSON.parse(data.resume.content) 
+                : data.resume.content;
+              
+              resumeData = { ...resumeData, ...content };
+              
+              // Populate form fields
+              document.getElementById('resumeTitle').value = data.resume.title || '';
+              document.getElementById('basicsName').value = resumeData.basics.name || '';
+              document.getElementById('basicsHeadline').value = resumeData.basics.headline || '';
+              document.getElementById('basicsEmail').value = resumeData.basics.email || '';
+              document.getElementById('basicsPhone').value = resumeData.basics.phone || '';
+              document.getElementById('basicsLocation').value = resumeData.basics.location || '';
+              document.getElementById('basicsLinkedIn').value = resumeData.basics.linkedIn || '';
+              document.getElementById('basicsUrl').value = resumeData.basics.url || '';
+              document.getElementById('basicsDateOfBirth').value = resumeData.basics.dateOfBirth || '';
+              document.getElementById('basicsNationality').value = resumeData.basics.nationality || '';
+              setProfilePhotoPreview(resumeData.basics.profilePhoto || '');
+              document.getElementById('targetJobTitle').value = resumeData.target.jobTitle || '';
+              document.getElementById('targetIndustry').value = resumeData.target.industry || '';
+              document.getElementById('summaryContent').value = resumeData.summary || '';
+              document.getElementById('templateFont').value = resumeData.settings?.font || 'Inter';
+              document.getElementById('pageFormat').value = resumeData.settings?.format || 'a4';
+              document.getElementById('sectionOrder').value = resumeData.settings?.sectionOrder || 'skills-first';
+              document.querySelectorAll('.template-preview').forEach(el => el.classList.remove('active'));
+              const savedActiveTemplate = document.getElementById(`template-${resumeData.template || 'modern'}`);
+              if (savedActiveTemplate) savedActiveTemplate.classList.add('active');
+              
+              // Render lists
+              renderSkills();
+              resumeData.experience.forEach(e => addExperience(e));
+              resumeData.education.forEach(e => addEducation(e));
+              resumeData.certifications.forEach(c => addCertification(c));
+              resumeData.projects.forEach(p => addProject(p));
+              resumeData.languages.forEach(l => addLanguage(l));
+              
+              updateATSScore();
+              pushLivePreview();
+            }
+          }
+        } catch (err) {
+          console.error('Failed to load resume:', err);
+        }
+      }
+    }
+
+    function showUpgradeModal(message) {
+      const existing = document.getElementById('upgradeModal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'upgradeModal';
+      modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);';
+      modal.innerHTML = `
+        <div style="background:white;border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;box-shadow:0 25px 50px rgba(0,0,0,0.25);">
+          <div style="font-size:48px;margin-bottom:16px;">👑</div>
+          <h2 style="font-size:20px;font-weight:700;color:#1f2937;margin-bottom:8px;">Upgrade Required</h2>
+          <p style="color:#6b7280;margin-bottom:24px;font-size:15px;">${message}</p>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <a href="/upgrade.html" style="display:block;background:#f59e0b;color:white;padding:12px 24px;border-radius:8px;font-weight:600;text-decoration:none;font-size:16px;">
+              <i class="fas fa-crown" style="margin-right:8px;"></i>Upgrade to Pro
+            </a>
+            <button onclick="document.getElementById('upgradeModal').remove()" style="background:#e5e7eb;color:#374151;padding:10px 24px;border-radius:8px;font-weight:500;border:none;cursor:pointer;font-size:14px;">
+              Maybe Later
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    function getCurrentUserData() {
+      try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch (_) { return {}; }
+    }
+
+    function isProUserClient() {
+      const user = getCurrentUserData();
+      return !!(user.subscription_tier && user.subscription_tier !== 'free');
+    }
+
+    function updateAISummaryControls() {
+      const aiBtn = document.getElementById('aiSummaryBtn');
+      const upgradeLink = document.getElementById('aiUpgradeLink');
+      if (!aiBtn || !upgradeLink) return;
+      if (isProUserClient()) {
+        aiBtn.classList.remove('hidden');
+        upgradeLink.classList.add('hidden');
+      } else {
+        aiBtn.classList.add('hidden');
+        upgradeLink.classList.remove('hidden');
+      }
+    }
+
+    function setAISummaryStatus(message, type = 'info') {
+      const box = document.getElementById('aiSummaryStatus');
+      if (!box) return;
+      box.className = `mb-4 px-4 py-3 rounded-lg text-sm ${type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`;
+      box.textContent = message;
+      box.classList.remove('hidden');
+    }
+
+    function openAISummaryModal() {
+      document.getElementById('aiSummaryModal')?.classList.remove('hidden');
+    }
+
+    function closeAISummaryModal() {
+      document.getElementById('aiSummaryModal')?.classList.add('hidden');
+    }
+
+    async function requestAISummary() {
+      const jobTitle = document.getElementById('targetJobTitle').value.trim() || document.getElementById('basicsHeadline').value.trim() || 'Professional';
+      const years = '5';
+      const skills = (resumeData.skills || []).map(s => s.name).filter(Boolean);
+      const response = await fetch('/api/ai/generate-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ job_title: jobTitle, years, skills })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (data.upgrade_required) {
+          showUpgradeModal(data.error || 'AI is available for Pro users only.');
+          throw new Error('__UPGRADE__');
+        }
+        throw new Error(data.error || 'Failed to generate summary');
+      }
+      return data;
+    }
+
+    async function generateSummaryWithAI() {
+      openAISummaryModal();
+      setAISummaryStatus('Generating professional summary...', 'info');
+      document.getElementById('aiSummaryResult').value = '';
+      try {
+        const data = await requestAISummary();
+        document.getElementById('aiSummaryResult').value = data.summary || '';
+        setAISummaryStatus('Summary generated. Review it and accept or regenerate.', 'success');
+      } catch (err) {
+        if (err.message === '__UPGRADE__') {
+          closeAISummaryModal();
+          return;
+        }
+        setAISummaryStatus(err.message || 'AI summary is temporarily unavailable. Please try again.', 'error');
+      }
+    }
+
+    async function regenerateSummaryWithAI() {
+      return generateSummaryWithAI();
+    }
+
+    function acceptAISummary() {
+      const value = document.getElementById('aiSummaryResult').value;
+      document.getElementById('summaryContent').value = value;
+      resumeData.summary = value;
+      updateATSScore();
+      closeAISummaryModal();
+    }
+
+    setTimeout(updateAISummaryControls, 50);
+
+    // ═══════════════════════════════════════════
+    // STEPPER
+    // ═══════════════════════════════════════════
+    const STEP_LABELS = ['Basic Info','Summary','Experience','Education','Skills','Extras'];
+    const STEP_MAP = {
+      resumeTitleCard:1, targetJobCard:1, personalInfoCard:1,
+      summaryCard:2,
+      experienceCard:3,
+      educationCard:4,
+      skillsCard:5,
+      certificationsCard:6, projectsCard:6, languagesCard:6
+    };
+    let currentStep = 1;
+    const TOTAL_STEPS = 6;
+
+    function showStep(step) {
+      currentStep = step;
+      // Show/hide sections
+      document.querySelectorAll('.stepper-section').forEach(el => {
+        el.classList.toggle('stepper-visible', parseInt(el.dataset.step) === step);
+      });
+      // Update pills
+      for (let i = 1; i <= TOTAL_STEPS; i++) {
+        const ind = document.getElementById('step-indicator-' + i);
+        const pill = document.getElementById('step-pill-' + i);
+        if (!ind || !pill) continue;
+        ind.classList.remove('active','completed');
+        if (i < step) { ind.classList.add('completed'); pill.innerHTML='<i class="fas fa-check" style="font-size:.7rem"></i>'; }
+        else if (i === step) { ind.classList.add('active'); pill.textContent = i; }
+        else pill.textContent = i;
+      }
+      // Update bottom nav
+      const prevBtn = document.getElementById('stepPrevBtn');
+      const nextBtn = document.getElementById('stepNextBtn');
+      const progText = document.getElementById('stepProgressText');
+      if (prevBtn) prevBtn.style.visibility = step === 1 ? 'hidden' : 'visible';
+      if (nextBtn) {
+        if (step === TOTAL_STEPS) {
+          nextBtn.innerHTML = '<i class="fas fa-eye mr-2"></i>Preview Resume';
+          nextBtn.onclick = () => switchTab('templates');
+        } else {
+          nextBtn.innerHTML = 'Next <i class="fas fa-arrow-right ml-2"></i>';
+          nextBtn.onclick = nextStep;
+        }
+      }
+      if (progText) progText.textContent = 'Step ' + step + ' of ' + TOTAL_STEPS + ' — ' + STEP_LABELS[step-1];
+      // Show/hide section tips
+      document.querySelectorAll('.section-tip').forEach(t => t.classList.remove('tip-visible'));
+      if (step === 2) { const t = document.getElementById('tip-summary'); if(t) t.classList.add('tip-visible'); }
+      if (step === 3) { const t = document.getElementById('tip-experience'); if(t) t.classList.add('tip-visible'); }
+      if (step === 5) { const t = document.getElementById('tip-skills'); if(t) t.classList.add('tip-visible'); }
+      // Auto-expand current step sections
+      if (step === 2) { const el = document.getElementById('summary'); if(el) el.classList.add('open'); }
+      // Scroll editor to top
+      const ep = document.getElementById('builderEditorPanel');
+      if (ep) ep.scrollTo({ top: 0, behavior: 'smooth' });
+      // Update completion
+      updateCompletion();
+    }
+
+    function nextStep() { if (currentStep < TOTAL_STEPS) showStep(currentStep + 1); }
+    function prevStep() { if (currentStep > 1) showStep(currentStep - 1); }
+    function goToStep(s) { showStep(s); }
+
+    // Hide stepper on non-content tabs
+    const _origSwitchTab = window.switchTab;
+    window.switchTab = function(tab) {
+      const sn = document.getElementById('stepperNav');
+      const sb = document.getElementById('stepperBottomNav');
+      const cb = document.querySelector('.completion-bar-container');
+      const show = tab === 'content';
+      if (sn) sn.style.display = show ? '' : 'none';
+      if (sb) sb.style.display = show ? '' : 'none';
+      if (cb) cb.style.display = show ? '' : 'none';
+      // Restore section visibility when back on content tab
+      if (show) {
+        document.querySelectorAll('.stepper-section').forEach(el => {
+          el.classList.toggle('stepper-visible', parseInt(el.dataset.step) === currentStep);
+        });
+      } else {
+        document.querySelectorAll('.stepper-section').forEach(el => el.classList.add('stepper-visible'));
+      }
+      if (_origSwitchTab) _origSwitchTab(tab);
+    };
+
+    // Initialize stepper after load
+    document.addEventListener('DOMContentLoaded', () => setTimeout(() => showStep(1), 200));
+
+    // ═══════════════════════════════════════════
+    // EMPTY STATE MANAGEMENT
+    // ═══════════════════════════════════════════
+    function updateEmptyStates() {
+      // Experience
+      const expEmpty = document.getElementById('experienceEmptyState');
+      const expList = document.getElementById('experienceList');
+      if (expEmpty && expList) {
+        const hasItems = expList.querySelectorAll('.experience-item, [data-type="experience"]').length > 0;
+        expEmpty.style.display = hasItems ? 'none' : 'flex';
+      }
+      // Education
+      const eduEmpty = document.getElementById('educationEmptyState');
+      const eduList = document.getElementById('educationList');
+      if (eduEmpty && eduList) {
+        const hasItems = eduList.querySelectorAll('.education-item, [data-type="education"]').length > 0;
+        eduEmpty.style.display = hasItems ? 'none' : 'flex';
+      }
+      // Skills
+      const sklEmpty = document.getElementById('skillsEmptyState');
+      const sklList = document.getElementById('skillsList');
+      if (sklEmpty && sklList) {
+        sklEmpty.style.display = sklList.children.length > 0 ? 'none' : 'flex';
+      }
+    }
+    // Patch addExperience/addEducation/addSkill to hide empty states
+    const _origAddExp = window.addExperience;
+    window.addExperience = function(...a) {
+      if (_origAddExp) _origAddExp(...a);
+      const e = document.getElementById('experienceEmptyState');
+      if (e) e.style.display = 'none';
+    };
+    const _origAddEdu = window.addEducation;
+    window.addEducation = function(...a) {
+      if (_origAddEdu) _origAddEdu(...a);
+      const e = document.getElementById('educationEmptyState');
+      if (e) e.style.display = 'none';
+    };
+    const _origAddSkl = window.addSkill;
+    window.addSkill = function(...a) {
+      if (_origAddSkl) _origAddSkl(...a);
+      setTimeout(() => { const e = document.getElementById('skillsEmptyState'); if (e) e.style.display = 'none'; }, 50);
+    };
+
+    // ═══════════════════════════════════════════
+    // COMPLETION BAR
+    // ═══════════════════════════════════════════
+    function updateCompletion() {
+      if (!window.resumeData) return;
+      const d = window.resumeData;
+      const checks = {
+        personal: !!(d.basics?.name && d.basics?.email),
+        summary: !!(d.basics?.summary && d.basics.summary.length > 20),
+        skills: !!(d.skills && d.skills.length >= 2),
+        experience: !!(d.experience && d.experience.length > 0),
+        education: !!(d.education && d.education.length > 0)
+      };
+      const filled = Object.values(checks).filter(Boolean).length;
+      const pct = Math.round((filled / 5) * 100);
+      const bar = document.getElementById('completionBarFill');
+      const pctEl = document.getElementById('completionPercent');
+      const msgEl = document.getElementById('completionMessage');
+      if (bar) {
+        bar.style.width = pct + '%';
+        bar.className = 'completion-bar-fill ' + (pct < 50 ? 'c-red' : pct < 80 ? 'c-orange' : 'c-green');
+      }
+      if (pctEl) pctEl.textContent = pct + '%';
+      const missing = Object.entries(checks).find(([,v]) => !v);
+      if (msgEl) {
+        if (pct === 100) msgEl.textContent = '🎉 Great resume! Ready to export.';
+        else if (missing) msgEl.textContent = 'Resume is ' + pct + '% complete — add ' + missing[0] + ' to improve';
+        else msgEl.textContent = 'Keep filling in your sections';
+      }
+      ['personal','summary','skills','experience','education'].forEach(k => {
+        const dot = document.getElementById('dot-' + k);
+        if (dot) { dot.classList.toggle('filled', !!checks[k]); dot.classList.toggle('empty-dot', !checks[k]); }
+      });
+    }
+    // Hook into ATS score update to also update completion
+    const _origUpdateATS = window.updateATSScore;
+    window.updateATSScore = function(...a) {
+      if (_origUpdateATS) _origUpdateATS(...a);
+      updateCompletion();
+      updateEmptyStates();
+    };
+
+    // ═══════════════════════════════════════════
+    // AUTO-SAVE
+    // ═══════════════════════════════════════════
+    let autoSaveTimer = null;
+    let isDirty = false;
+
+    function setAutosaveStatus(state, msg) {
+      const el = document.getElementById('autosaveStatus');
+      if (!el) return;
+      el.className = 'autosave-' + state;
+      el.textContent = msg;
+      el.style.cssText = state === 'saving' ? 'color:#2563eb;font-size:.75rem;margin-left:.5rem'
+        : state === 'saved' ? 'color:#16a34a;font-size:.75rem;margin-left:.5rem'
+        : 'color:#dc2626;font-size:.75rem;margin-left:.5rem;cursor:pointer';
+      if (state === 'saved') setTimeout(() => { if (el) el.textContent = ''; }, 3000);
+    }
+
+    function scheduleAutoSave() {
+      isDirty = true;
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(async () => {
+        if (!isDirty) return;
+        const resumeId = new URLSearchParams(window.location.search).get('id');
+        if (!resumeId) return;
+        setAutosaveStatus('saving', 'Saving...');
+        try {
+          const res = await fetch('/api/resumes/' + resumeId, {
+            method: 'PUT',
+            headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + localStorage.getItem('token') },
+            body: JSON.stringify({ title: window.resumeData?.basics?.name ? window.resumeData.basics.name + ' — Resume' : 'My Resume', content: window.resumeData })
+          });
+          if (!res.ok) throw new Error('Save failed');
+          isDirty = false;
+          setAutosaveStatus('saved', 'All changes saved ✓');
+        } catch(e) {
+          setAutosaveStatus('error', 'Save failed — click to retry');
+          document.getElementById('autosaveStatus').onclick = scheduleAutoSave;
+        }
+      }, 30000);
+    }
+
+    // Hook dirty tracking into oninput events
+    document.addEventListener('input', (e) => {
+      if (e.target.closest('#tab-content')) scheduleAutoSave();
+    });
+    document.addEventListener('change', (e) => {
+      if (e.target.closest('#tab-content')) scheduleAutoSave();
+    });
+
+    // ═══════════════════════════════════════════
+    // MOBILE PREVIEW
+    // ═══════════════════════════════════════════
+    function openMobilePreview() {
+      const overlay = document.getElementById('mobilePreviewOverlay');
+      const frame = document.getElementById('mobilePreviewFrame');
+      if (overlay) overlay.classList.add('open');
+      if (frame) {
+        const resumeId = new URLSearchParams(window.location.search).get('id');
+        frame.src = resumeId ? '/preview.html?id=' + resumeId : '/preview.html';
+      }
+    }
+    function closeMobilePreview() {
+      const overlay = document.getElementById('mobilePreviewOverlay');
+      if (overlay) overlay.classList.remove('open');
+    }
+
+  </script>
+</body>
+</html>

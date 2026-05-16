@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upgrade to Pro - cvmaker.ink</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+  <script src="/branding.js"></script>
+  <script src="/assets/js/tracking-loader.js"></script>
+</head>
+<body class="bg-slate-950 text-white min-h-screen">
+  <div class="max-w-5xl mx-auto px-4 py-16">
+    <div class="text-center mb-12">
+      <a href="/" class="inline-flex items-center space-x-2 mb-6 text-white">
+        <img src="/uploads/branding/cvmaker-logo-20260515.svg" alt="cvmaker.ink" class="h-16 w-auto max-w-[320px] object-contain" />
+      </a>
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">Upgrade to <span id="planName">Pro</span></h1>
+      <p class="text-slate-300 text-lg max-w-2xl mx-auto">Unlock premium templates, cleaner exports, and a full 30-day Pro subscription after successful PayPal payment.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8 items-start">
+      <div class="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur">
+        <div class="inline-flex items-center px-3 py-1 rounded-full bg-blue-500/15 text-blue-300 text-sm font-medium mb-5">
+          <i class="fas fa-crown mr-2"></i> Best Value
+        </div>
+        <h2 class="text-3xl font-bold mb-2" id="cardPlanName">CVMaker.ink Pro</h2>
+        <div class="flex items-end gap-2 mb-6">
+          <span class="text-5xl font-bold" id="planPrice">$4.99</span>
+          <span class="text-slate-400 pb-2" id="planCycle">/ 30 days</span>
+        </div>
+        <ul class="space-y-4 text-slate-200">
+          <li><i class="fas fa-check text-emerald-400 mr-3"></i>Premium resume styling</li>
+          <li><i class="fas fa-check text-emerald-400 mr-3"></i>Faster export workflow</li>
+          <li><i class="fas fa-check text-emerald-400 mr-3"></i>30-day Pro activation on successful payment</li>
+        </ul>
+      </div>
+
+      <div class="bg-white rounded-3xl p-8 text-slate-900 shadow-2xl">
+        <div id="message" class="hidden mb-5 rounded-xl px-4 py-3 text-sm font-medium"></div>
+        <div class="mb-6">
+          <h3 class="text-2xl font-bold mb-2">Checkout with PayPal</h3>
+          <p class="text-slate-600">We load the live plan settings from the API, then create your order securely on the server.</p>
+        </div>
+        <div id="paypal-button-container"></div>
+        <div id="loadingState" class="text-sm text-slate-500 mt-4">Loading plan and PayPal checkout...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    if (!token) {
+      window.location.href = '/login.html';
+    }
+
+    let paymentConfig = null;
+
+    function setMessage(text, type = 'error') {
+      const box = document.getElementById('message');
+      box.className = 'mb-5 rounded-xl px-4 py-3 text-sm font-medium';
+      box.classList.remove('hidden');
+      box.classList.add(type === 'success' ? 'bg-emerald-100' : 'bg-red-100');
+      box.classList.add(type === 'success' ? 'text-emerald-700' : 'text-red-700');
+      box.textContent = text;
+    }
+
+    function formatPrice(value, currency) {
+      try {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(value));
+      } catch (_) {
+        return `$${value}`;
+      }
+    }
+
+    async function loadConfig() {
+      const response = await fetch('/api/payments/config', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to load payment settings');
+      }
+
+      paymentConfig = result;
+      document.getElementById('planName').textContent = result.plan.name;
+      document.getElementById('cardPlanName').textContent = result.plan.name;
+      document.getElementById('planPrice').textContent = formatPrice(result.plan.price, result.plan.currency);
+      document.getElementById('loadingState').textContent = 'Loading PayPal checkout...';
+
+      if (!result.paypal.client_id) {
+        throw new Error('PayPal client ID is not configured.');
+      }
+
+      return result;
+    }
+
+    function loadPayPalSdk(clientId, env) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=${encodeURIComponent(paymentConfig.plan.currency)}&intent=capture`;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Failed to load PayPal SDK'));
+        document.head.appendChild(script);
+      });
+    }
+
+    async function renderButtons() {
+      if (!window.paypal) {
+        throw new Error('PayPal SDK is not available');
+      }
+
+      window.paypal.Buttons({
+        createOrder: async () => {
+          const response = await fetch('/api/payments/create-order', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ plan: 'pro', user_id: user.id || null })
+          });
+
+          const result = await response.json();
+          if (!response.ok || !result.id) {
+            throw new Error(result.error || 'Failed to create PayPal order');
+          }
+
+          return result.id;
+        },
+        onApprove: async (data) => {
+          const response = await fetch('/api/payments/capture-order', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ orderID: data.orderID })
+          });
+
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Failed to capture payment');
+          }
+
+          if (user) {
+            user.subscription_tier = 'pro';
+            localStorage.setItem('user', JSON.stringify(user));
+          }
+
+          window.location.href = '/dashboard.html?upgraded=true';
+        },
+        onError: (err) => {
+          console.error(err);
+          setMessage(err.message || 'PayPal checkout failed. Please try again.');
+        }
+      }).render('#paypal-button-container');
+
+      document.getElementById('loadingState').textContent = '';
+    }
+
+    (async () => {
+      try {
+        const config = await loadConfig();
+        await loadPayPalSdk(config.paypal.client_id, config.paypal.env);
+        await renderButtons();
+      } catch (error) {
+        console.error(error);
+        setMessage(error.message || 'Unable to load checkout');
+        document.getElementById('loadingState').textContent = 'Checkout is unavailable right now.';
+      }
+    })();
+  </script>
+</body>
+</html>

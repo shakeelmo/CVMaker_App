@@ -1,0 +1,2471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - cvmaker.ink</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
+    <style>
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .nav-item { transition: all 0.3s; border-left: 3px solid transparent; }
+        .nav-item:hover, .nav-item.active { background: rgba(59, 130, 246, 0.1); border-left-color: #3B82F6; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .ck-editor__editable { min-height: 300px; }
+        .gradient-text { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sidebar-scroll::-webkit-scrollbar { width: 6px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #888; border-radius: 3px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .status-online { background: #10B981; }
+        .status-offline { background: #EF4444; }
+        .seo-score { font-size: 2rem; font-weight: bold; }
+        .seo-good { color: #10B981; }
+        .seo-average { color: #F59E0B; }
+        .seo-poor { color: #EF4444; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-gray-600">Loading Dashboard...</p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="hidden">
+        <!-- Sidebar -->
+        <div class="fixed left-0 top-0 h-full w-64 bg-white shadow-xl z-40 sidebar-scroll overflow-y-auto">
+            <div class="p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-white">Admin Panel</h2>
+                        <p class="text-xs text-blue-100">cvmaker.ink</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="mt-4">
+                <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase">Main</div>
+                
+                <a href="#" onclick="showSection('dashboard')" id="nav-dashboard" class="nav-item active flex items-center px-6 py-3 text-gray-700">
+                    <i class="fas fa-chart-line w-6"></i>
+                    <span>Dashboard</span>
+                    <span class="ml-auto bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full">New</span>
+                </a>
+                
+                <div class="px-4 py-2 mt-4 text-xs font-semibold text-gray-400 uppercase">Content Management</div>
+                
+                <a href="#" onclick="showSection('pages')" id="nav-pages" class="nav-item flex items-center px-6 py-3 text-gray-700">
+                    <i class="fas fa-file-alt w-6"></i>
+                    <span>Pages</span>
+                </a>
+                
+                <a href="#" onclick="showSection('blogs')" id="nav-blogs" class="nav-item flex items-center px-6 py-3 text-gray-700">
+                    <i class="fas fa-blog w-6"></i>
+                    <span>Blog Posts</span>
+                </a>
+                
+                <a href="#" onclick="showSection('seo')" id="nav-seo" class="nav-item flex items-center px-6 py-3 text-gray-700">
+                    <i class="fas fa-search w-6"></i>
+                    <span>SEO Center</span>
+                </a>
+                
+                <div class="px-4 py-2 mt-4 text-xs font-semibold text-gray-400 uppercase">Users & Data</div>
+                
+                <a href="#" onclick="showSection('admins')" id="nav-admins" class="nav-item flex items-center px-6 py-3 text-gray-700">
+                    <i class="fas fa-user-shield w-6"></i>
+                    <span>Admins</span>
+                </a>
+                
+                <a href="#" onclick="showSection('users')" id="nav-users" class="nav-item flex items-center px-6 py-3 text-gray-700">
+                    <i class="fas fa-users w-6"></i>
+                    <span>Users</span>
+                </a>
+                
+                <a href="#" onclick="showSection('resumes')" id="nav-resumes" class="nav-item flex items-center px-6 py-3 text-gray-700">
+                    <i class="fas fa-file-pdf w-6"></i>
+                    <span>Resumes</span>
+                </a>
+                
+                <a href="#" onclick="showSection('templates')" id="nav-templates" class="nav-item flex items-center px-6 py-3 text-gray-700">
+                    <i class="fas fa-palette w-6"></i>
+                    <span>Templates</span>
+                </a>
+                
+                <div class="px-4 py-2 mt-4 text-xs font-semibold text-gray-400 uppercase">Communication</div>
+                
+                <a href="#" onclick="showSection('contacts')" id="nav-contacts" class="nav-item flex items-center px-6 py-3 text-gray-700">
+                    <i class="fas fa-envelope w-6"></i>
+                    <span>Messages</span>
+                    <span id="contact-badge" class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
+                </a>
+                
+                <a href="#" onclick="showSection('newsletter')" id="nav-newsletter" class="nav-item flex items-center px-6 py-3 text-gray-700">
+                    <i class="fas fa-paper-plane w-6"></i>
+                    <span>Newsletter</span>
+                </a>
+                
+                <div class="px-4 py-2 mt-4 text-xs font-semibold text-gray-400 uppercase">System</div>
+                
+                <a href="#" onclick="showSection('settings')" id="nav-settings" class="nav-item flex items-center px-6 py-3 text-gray-700">
+                    <i class="fas fa-cog w-6"></i>
+                    <span>Settings</span>
+                </a>
+                
+                <a href="#" onclick="showSection('analytics')" id="nav-analytics" class="nav-item flex items-center px-6 py-3 text-gray-700">
+                    <i class="fas fa-chart-bar w-6"></i>
+                    <span>Analytics</span>
+                </a>
+                
+                <div class="border-t mt-6 pt-4">
+                    <a href="#" onclick="logout()" class="flex items-center px-6 py-3 text-red-600 hover:bg-red-50 transition">
+                        <i class="fas fa-sign-out-alt w-6"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="ml-64 p-8">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 id="page-title" class="text-2xl font-bold text-gray-800">Dashboard</h1>
+                    <p id="page-subtitle" class="text-gray-500 mt-1">Welcome back! Here's what's happening with your site.</p>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button onclick="refreshData()" class="p-2 text-gray-400 hover:text-gray-600 transition">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    
+                    <div class="flex items-center space-x-3 bg-white px-4 py-2 rounded-lg shadow-sm">
+                        <div class="text-right">
+                            <p class="font-medium text-gray-800 text-sm">Admin User</p>
+                            <p class="text-xs text-gray-500">Administrator</p>
+                        </div>
+                        
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Section -->
+            <div id="section-dashboard" class="fade-in">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="glass-card p-6 rounded-xl shadow-sm hover:shadow-md transition">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-gray-500 font-medium">Total Users</p>
+                                <p class="text-3xl font-bold text-gray-800 mt-1" id="stat-users">-</p>
+                                <p class="text-xs text-green-600 mt-2 flex items-center">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    <span id="stat-new-users">-</span> today
+                                </p>
+                            </div>
+                            
+                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                                <i class="fas fa-users text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 rounded-xl shadow-sm hover:shadow-md transition">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-gray-500 font-medium">Resumes Created</p>
+                                <p class="text-3xl font-bold text-gray-800 mt-1" id="stat-resumes">-</p>
+                                <p class="text-xs text-gray-500 mt-2">Active resumes</p>
+                            </div>
+                            
+                            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600">
+                                <i class="fas fa-file-alt text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 rounded-xl shadow-sm hover:shadow-md transition">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-gray-500 font-medium">Blog Posts</p>
+                                <p class="text-3xl font-bold text-gray-800 mt-1" id="stat-blogs">-</p>
+                                <p class="text-xs text-green-600 mt-2">Published</p>
+                            </div>
+                            
+                            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
+                                <i class="fas fa-blog text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 rounded-xl shadow-sm hover:shadow-md transition">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-gray-500 font-medium">New Messages</p>
+                                <p class="text-3xl font-bold text-gray-800 mt-1" id="stat-contacts">-</p>
+                                <p class="text-xs text-orange-600 mt-2">Awaiting reply</p>
+                            </div>
+                            
+                            <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
+                                <i class="fas fa-envelope text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="glass-card p-6 rounded-xl shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">User Growth (Last 7 Days)</h3>
+                            
+                            <select class="text-sm border border-gray-300 rounded-lg px-3 py-1">
+                                <option>Last 7 Days</option>
+                                <option>Last 30 Days</option>
+                                <option>This Month</option>
+                            </select>
+                        </div>
+                        <div class="h-80 relative">
+                            <canvas id="userGrowthChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 rounded-xl shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">Template Usage</h3>
+                            
+                            <button class="text-blue-600 text-sm hover:underline">View All</button>
+                        </div>
+                        
+                        <div class="h-80 relative">
+                            <canvas id="templateUsageChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity & SEO Overview -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 glass-card p-6 rounded-xl shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">Recent Activity</h3>
+                            
+                            <button class="text-blue-600 text-sm hover:underline">View All</button>
+                        </div>
+                        
+                        <div id="recent-activity" class="space-y-4">
+                            <!-- Activity items will be loaded here -->
+                            <div class="text-center py-8 text-gray-400">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                <p>Loading activity...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 rounded-xl shadow-sm">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">SEO Overview</h3>
+                        
+                        <div class="text-center mb-6">
+                            <div class="seo-score seo-good" id="seo-score">85</div>
+                            <p class="text-gray-500 text-sm">Overall SEO Score</p>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Meta Descriptions</span>
+                                <span class="text-sm font-semibold text-green-600">✓ Good</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Page Titles</span>
+                                <span class="text-sm font-semibold text-green-600">✓ Good</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Mobile Friendly</span>
+                                <span class="text-sm font-semibold text-green-600">✓ Yes</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">SSL Certificate</span>
+                                <span class="text-sm font-semibold text-green-600">✓ Active</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="showSection('seo')" class="w-full mt-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                            Improve SEO
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Sections (will be populated via JS) -->
+            <div id="section-pages" class="hidden fade-in"></div>
+            <div id="section-blogs" class="hidden fade-in"></div>
+            <div id="section-seo" class="hidden fade-in"></div>
+            <div id="section-admins" class="hidden fade-in"></div>
+            <div id="section-users" class="hidden fade-in"></div>
+            <div id="section-resumes" class="hidden fade-in"></div>
+            <div id="section-templates" class="hidden fade-in"></div>
+            <div id="section-contacts" class="hidden fade-in"></div>
+            <div id="section-newsletter" class="hidden fade-in"></div>
+            <div id="section-settings" class="hidden fade-in"></div>
+            <div id="section-analytics" class="hidden fade-in"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        const API_URL = '/api/admin.php';
+        let authToken = localStorage.getItem('admin_token');
+        let currentSection = 'dashboard';
+        let editors = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!authToken) {
+                window.location.href = '/admin.html';
+                return;
+            }
+            
+            // Show loading
+            setTimeout(() => {
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                
+                // Load dashboard data
+                loadDashboard();
+                refreshSidebarBadges();
+            }, 500);
+        });
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('admin_token');
+            window.location.href = '/admin.html';
+        }
+
+        // Section navigation
+        function showSection(section) {
+            // Hide all sections
+            document.querySelectorAll('[id^="section-"]').forEach(el => el.classList.add('hidden'));
+            
+            // Show selected
+            const selectedSection = document.getElementById(`section-${section}`);
+            if (selectedSection) {
+                selectedSection.classList.remove('hidden');
+                
+                // Load content if empty
+                if (!selectedSection.innerHTML || selectedSection.innerHTML.trim() === '') {
+                    loadSectionContent(section);
+                }
+            }
+            
+            // Update nav
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active');
+                el.classList.remove('bg-blue-50');
+            });
+            const navItem = document.getElementById(`nav-${section}`);
+            if (navItem) {
+                navItem.classList.add('active');
+                navItem.classList.add('bg-blue-50');
+            }
+            
+            // Update titles
+            const titles = {
+                'dashboard': { title: 'Dashboard', subtitle: 'Welcome back! Here\'s what\'s happening with your site.' },
+                'pages': { title: 'Pages', subtitle: 'Manage your website pages and content.' },
+                'blogs': { title: 'Blog Posts', subtitle: 'Create and manage blog content.' },
+                'seo': { title: 'SEO Center', subtitle: 'Optimize your site for search engines.' },
+                'admins': { title: 'Admins', subtitle: 'Manage admin and super admin accounts.' },
+                'users': { title: 'Users', subtitle: 'Manage user accounts and permissions.' },
+                'resumes': { title: 'Resumes', subtitle: 'View and manage user resumes.' },
+                'templates': { title: 'Templates', subtitle: 'Manage resume templates.' },
+                'contacts': { title: 'Messages', subtitle: 'View and respond to contact messages.' },
+                'newsletter': { title: 'Newsletter', subtitle: 'Manage email campaigns and subscribers.' },
+                'settings': { title: 'Settings', subtitle: 'Configure your website settings.' },
+                'analytics': { title: 'Analytics', subtitle: 'View detailed site statistics.' }
+            };
+            
+            const titleInfo = titles[section] || titles['dashboard'];
+            document.getElementById('page-title').textContent = titleInfo.title;
+            document.getElementById('page-subtitle').textContent = titleInfo.subtitle;
+            
+            currentSection = section;
+        }
+
+        // API helper
+        async function apiRequest(action, method = 'GET', body = null) {
+            const options = {
+                method,
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+
+            try {
+                const response = await fetch(`${API_URL}?action=${action}`, options);
+                return response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                return { error: 'Network error' };
+            }
+        }
+
+        // Load dashboard data
+        async function loadDashboard() {
+            try {
+                const data = await apiRequest('stats');
+                
+                if (data.success) {
+                    document.getElementById('stat-users').textContent = data.stats.users || 0;
+                    document.getElementById('stat-resumes').textContent = data.stats.resumes || 0;
+                    document.getElementById('stat-blogs').textContent = data.stats.published_blogs || 0;
+                    document.getElementById('stat-contacts').textContent = data.stats.new_contacts || 0;
+                    document.getElementById('stat-new-users').textContent = data.stats.new_users_today || 0;
+
+                    // Contact badge
+                    if (data.stats.new_contacts > 0) {
+                        document.getElementById('contact-badge').textContent = data.stats.new_contacts;
+                        document.getElementById('contact-badge').classList.remove('hidden');
+                    }
+
+                    // Initialize charts
+                    initCharts(data.stats);
+                    
+                    // Load recent activity
+                    loadRecentActivity();
+                }
+            } catch (error) {
+                console.error('Dashboard error:', error);
+            }
+        }
+
+        // Initialize charts
+        function initCharts(stats) {
+            // User growth chart
+            const userCtx = document.getElementById('userGrowthChart');
+            if (userCtx) {
+                const today = new Date();
+                const dateMap = Object.fromEntries((stats.weekly_users || []).map(u => [u.date, Number(u.count || 0)]));
+                const labels = [];
+                const values = [];
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date(today);
+                    d.setDate(today.getDate() - i);
+                    const iso = d.toISOString().slice(0, 10);
+                    labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                    values.push(dateMap[iso] || 0);
+                }
+
+                const maxValue = Math.max(...values, 0);
+                const suggestedMax = maxValue <= 5 ? 5 : (maxValue <= 10 ? 10 : (maxValue <= 20 ? 20 : Math.ceil(maxValue / 5) * 5));
+
+                if (window.dashboardUserChart) window.dashboardUserChart.destroy();
+                window.dashboardUserChart = new Chart(userCtx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'New Users',
+                            data: values,
+                            backgroundColor: 'rgba(59, 130, 246, 0.75)',
+                            borderColor: '#3B82F6',
+                            borderWidth: 1,
+                            borderRadius: 6,
+                            maxBarThickness: 42
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                suggestedMax,
+                                ticks: { stepSize: Math.max(1, Math.ceil(suggestedMax / 5)), precision: 0 },
+                                grid: { color: 'rgba(229, 231, 235, 0.9)' }
+                            },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+
+            // Template usage chart
+            const templateCtx = document.getElementById('templateUsageChart');
+            if (templateCtx) {
+                new Chart(templateCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: stats.template_usage?.map(t => t.name) || ['Modern', 'Classic', 'Minimal', 'Creative'],
+                        datasets: [{
+                            data: stats.template_usage?.map(t => t.count) || [45, 30, 15, 10],
+                            backgroundColor: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Load recent activity
+        async function loadRecentActivity() {
+            const container = document.getElementById('recent-activity');
+            if (!container) return;
+            try {
+                const data = await apiRequest('activity');
+                if (!data.success || !data.activities?.length) {
+                    container.innerHTML = '<div class="text-sm text-gray-500">No recent activity yet.</div>';
+                    return;
+                }
+                const iconMap = {
+                    login: ['fa-sign-in-alt', 'blue'],
+                    user_update: ['fa-user-edit', 'indigo'],
+                    user_delete: ['fa-user-times', 'red'],
+                    resume_delete: ['fa-file-pdf', 'red'],
+                    template_update: ['fa-palette', 'purple'],
+                    page_update: ['fa-file-alt', 'green'],
+                    settings_update: ['fa-cog', 'gray'],
+                    blog_create: ['fa-blog', 'emerald'],
+                    blog_update: ['fa-edit', 'amber'],
+                    blog_delete: ['fa-trash', 'red'],
+                    email_sent: ['fa-paper-plane', 'sky']
+                };
+                container.innerHTML = data.activities.map(activity => {
+                    const [icon, color] = iconMap[activity.action] || ['fa-circle-info', 'gray'];
+                    return `
+                        <div class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                            <div class="w-10 h-10 bg-${color}-100 rounded-full flex items-center justify-center text-${color}-600 flex-shrink-0">
+                                <i class="fas ${icon}"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-800">${activity.description || activity.action}</p>
+                                <p class="text-xs text-gray-400">${(activity.created_at || '').replace('T',' ').slice(0,16)}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                container.innerHTML = '<div class="text-sm text-red-500">Failed to load recent activity.</div>';
+            }
+        }
+
+        // Refresh data
+        function refreshData() {
+            const btn = document.querySelector('.fa-sync-alt');
+            btn.classList.add('fa-spin');
+            
+            if (currentSection === 'dashboard') {
+                loadDashboard();
+            }
+            
+            setTimeout(() => btn.classList.remove('fa-spin'), 1000);
+        }
+
+        function maskApiKey(value) {
+            if (!value) return '';
+            if (value.length <= 4) return '*'.repeat(value.length);
+            return '*'.repeat(Math.max(value.length - 4, 4)) + value.slice(-4);
+        }
+
+        async function loadSettings() {
+            const data = await apiRequest('settings');
+
+            if (!data.success) {
+                return;
+            }
+
+            const settings = data.settings || {};
+            Object.entries(settings).forEach(([key, value]) => {
+                const input = document.getElementById(`setting-${key}`);
+                if (!input) return;
+
+                if (key === 'gemini_api_key' || key === 'paypal_client_secret' || key === 'smtp_password') {
+                    const maskedValue = maskApiKey(value || '');
+                    input.value = maskedValue;
+                    input.dataset.maskedValue = maskedValue;
+                    input.dataset.hasSavedValue = value ? '1' : '0';
+                    input.placeholder = value ? maskedValue : 'Not set';
+                    return;
+                }
+
+                input.value = value ?? '';
+            });
+
+            if (!settings.paypal_env && settings.paypal_environment) {
+                const paypalEnvInput = document.getElementById('setting-paypal_env');
+                if (paypalEnvInput) paypalEnvInput.value = settings.paypal_environment;
+            }
+
+            // Load logo/favicon previews
+            if (settings.site_logo) {
+                const logoImg = document.getElementById('logo-img');
+                const logoPlaceholder = document.getElementById('logo-placeholder');
+                if (logoImg) { logoImg.src = settings.site_logo; logoImg.classList.remove('hidden'); }
+                if (logoPlaceholder) logoPlaceholder.classList.add('hidden');
+            }
+            if (settings.site_favicon) {
+                const faviconImg = document.getElementById('favicon-img');
+                const faviconPlaceholder = document.getElementById('favicon-placeholder');
+                if (faviconImg) { faviconImg.src = settings.site_favicon; faviconImg.classList.remove('hidden'); }
+                if (faviconPlaceholder) faviconPlaceholder.classList.add('hidden');
+            }
+        }
+
+        async function saveSettings(e) {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const settings = {};
+
+            formData.forEach((value, key) => {
+                if (key === 'gemini_api_key' || key === 'paypal_client_secret' || key === 'smtp_password') {
+                    const input = document.getElementById(`setting-${key}`);
+                    const maskedValue = input?.dataset.maskedValue || '';
+                    const hasSavedValue = input?.dataset.hasSavedValue === '1';
+
+                    if (hasSavedValue && (!value || value === maskedValue)) {
+                        return;
+                    }
+                }
+
+                settings[key] = value;
+            });
+
+            const result = await apiRequest('settings', 'PUT', { settings });
+
+            if (result.success) {
+                await loadSettings();
+                alert('Settings saved successfully!');
+            } else {
+                alert(result.error || 'Error saving settings');
+            }
+        }
+        async function testEmailConfig() {
+            const resultDiv = document.getElementById('test-email-result');
+            if (!resultDiv) return;
+            resultDiv.classList.remove('hidden');
+            resultDiv.className = 'mt-4 px-4 py-3 rounded-lg text-sm font-medium bg-yellow-100 text-yellow-700';
+            resultDiv.textContent = 'Sending test email...';
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const response = await fetch('/api/admin.php?action=test-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    resultDiv.className = 'mt-4 px-4 py-3 rounded-lg text-sm font-medium bg-green-100 text-green-700';
+                    resultDiv.textContent = data.message || 'Test email sent successfully!';
+                } else {
+                    resultDiv.className = 'mt-4 px-4 py-3 rounded-lg text-sm font-medium bg-red-100 text-red-700';
+                    resultDiv.textContent = data.error || 'Failed to send test email';
+                }
+            } catch (err) {
+                resultDiv.className = 'mt-4 px-4 py-3 rounded-lg text-sm font-medium bg-red-100 text-red-700';
+                resultDiv.textContent = 'Error: ' + err.message;
+            }
+        }
+
+
+        async function uploadBranding(type) {
+            const fileInput = document.getElementById(type + '-upload');
+            const file = fileInput?.files?.[0];
+            if (!file) return;
+
+            const maxSize = type === 'favicon' ? 1 * 1024 * 1024 : 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert(type === 'favicon' ? 'Favicon must be under 1MB.' : 'Logo must be under 5MB.');
+                fileInput.value = '';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('type', type);
+
+            try {
+                const response = await fetch('/api/admin.php?action=branding-upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` },
+                    body: formData
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Upload failed');
+
+                // Update preview
+                const img = document.getElementById(type + '-img');
+                const placeholder = document.getElementById(type + '-placeholder');
+                if (img) { img.src = data.url + '?t=' + Date.now(); img.classList.remove('hidden'); }
+                if (placeholder) placeholder.classList.add('hidden');
+                fileInput.value = '';
+                alert(type === 'logo' ? 'Logo updated!' : 'Favicon updated!');
+            } catch (error) {
+                alert('Upload failed: ' + error.message);
+                fileInput.value = '';
+            }
+        }
+
+        // Load section content (placeholder - will be implemented)
+        function loadSectionContent(section) {
+            const container = document.getElementById(`section-${section}`);
+            
+            // Placeholder content
+            const content = {
+                'pages': `
+                    <div class="glass-card p-6 rounded-xl shadow-sm">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">Pages Management</h2>
+                                <p class="text-gray-500">Edit static pages from the live database.</p>
+                            </div>
+                        </div>
+                        <div id="pages-message" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-medium"></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="lg:col-span-1">
+                                <div id="pages-list" class="space-y-2"></div>
+                            </div>
+                            <div class="lg:col-span-2">
+                                <div class="space-y-4">
+                                    <input type="hidden" id="page-id">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Page Title</label>
+                                        <input type="text" id="page-editor-title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                                        <textarea id="page-content" rows="16" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button onclick="savePage()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Save Changes</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'blogs': `
+                    <div class="glass-card p-6 rounded-xl shadow-sm space-y-6">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">Blog Posts</h2>
+                                <p class="text-gray-500">Create, edit, publish, and delete blog posts.</p>
+                            </div>
+                            <button onclick="openBlogEditor()" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                <i class="fas fa-plus mr-2"></i>New Post
+                            </button>
+                        </div>
+                        <div id="blogs-message" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-medium"></div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50"><tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Title</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Slug</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Created</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                                </tr></thead>
+                                <tbody id="blogs-table-body" class="divide-y divide-gray-100 bg-white">
+                                    <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Loading blog posts...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="blog-editor-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[92vh] overflow-hidden">
+                            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                                <h3 class="text-xl font-bold text-gray-800" id="blog-editor-title">New Blog Post</h3>
+                                <button onclick="closeBlogEditor()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                            </div>
+                            <div class="p-6 overflow-y-auto max-h-[78vh] space-y-4">
+                                <input type="hidden" id="blog-id">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                                        <input type="text" id="blog-title-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Slug</label>
+                                        <input type="text" id="blog-slug-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                                        <select id="blog-status-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                            <option value="draft">Draft</option>
+                                            <option value="published">Published</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Featured Image URL</label>
+                                        <input type="text" id="blog-image-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Excerpt</label>
+                                    <textarea id="blog-excerpt-input" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                                    <textarea id="blog-content-input" rows="14" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></textarea>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Meta Title</label>
+                                        <input type="text" id="blog-meta-title-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Meta Description</label>
+                                        <input type="text" id="blog-meta-description-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Meta Keywords</label>
+                                        <input type="text" id="blog-meta-keywords-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                </div>
+                                <div class="flex justify-end gap-3">
+                                    <button onclick="closeBlogEditor()" class="px-5 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                                    <button onclick="saveBlogPost()" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Post</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'seo': `
+                    <div class="glass-card p-6 rounded-xl shadow-sm">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">SEO Center</h2>
+                                <p class="text-gray-500">Manage meta titles, descriptions, and sitemap for all pages.</p>
+                            </div>
+                            <button onclick="regenerateSitemap()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
+                                <i class="fas fa-sync-alt"></i> Regenerate Sitemap
+                            </button>
+                        </div>
+                        <div id="seo-message" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-medium"></div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Page</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">URL</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Meta Title</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Meta Description</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="seo-table-body" class="divide-y divide-gray-100 bg-white">
+                                    <tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Loading SEO data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `,
+                'admins': `
+                    <div class="glass-card p-6 rounded-xl shadow-sm">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">Admin Management</h2>
+                                <p class="text-gray-500">Manage admin and super admin accounts. Create, suspend, or reset passwords.</p>
+                            </div>
+                            <button onclick="openAddAdminModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+                                <i class="fas fa-plus"></i> Add Admin
+                            </button>
+                        </div>
+                        <div id="admins-message" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-medium"></div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">ID</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Email</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Name</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Role</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Last Login</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admins-table-body" class="divide-y divide-gray-100 bg-white">
+                                    <tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">Loading admins...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Add Admin Modal -->
+                    <div id="add-admin-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+                        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-xl font-bold text-gray-800">Add New Admin</h3>
+                                <button onclick="closeAddAdminModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                                    <input type="text" id="admin-first-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="First name">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                                    <input type="text" id="admin-last-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Last name">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input type="email" id="admin-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="admin@example.com">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Password (min 8 chars)</label>
+                                    <input type="password" id="admin-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Min 8 characters">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                                    <select id="admin-role" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <option value="admin">Admin</option>
+                                        <option value="super_admin">Super Admin</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-6 flex gap-3">
+                                <button onclick="closeAddAdminModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+                                <button onclick="createAdmin()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Create Admin</button>
+                            </div>
+                            <div id="admin-create-message" class="hidden mt-3 px-4 py-3 rounded-lg text-sm font-medium"></div>
+                        </div>
+                    </div>
+                `,
+
+                'users': `
+                    <div class="glass-card p-6 rounded-xl shadow-sm">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">Users Management</h2>
+                                <p class="text-gray-500">Manage users, roles, subscriptions, expiry dates, and deletions.</p>
+                            </div>
+                            <div class="flex gap-3">
+                                <input type="text" id="users-search" placeholder="Search by email or name" class="w-full md:w-72 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <button onclick="loadUsersSection()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                    <i class="fas fa-search mr-2"></i>Search
+                                </button>
+                            </div>
+                        </div>
+                        <div id="users-message" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-medium"></div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">ID</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Email</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Name</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Role</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tier</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">AI</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Expires</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Created</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body" class="divide-y divide-gray-100 bg-white">
+                                    <tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">Loading users...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `,
+                'resumes': `
+                    <div class="glass-card p-6 rounded-xl shadow-sm">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">Resumes Management</h2>
+                                <p class="text-gray-500">View, inspect, filter, and delete resumes from the live database.</p>
+                            </div>
+                            <div class="flex gap-3">
+                                <input type="text" id="resumes-user-filter" placeholder="Filter by user email" class="w-full md:w-72 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <button onclick="loadResumesSection()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                    <i class="fas fa-search mr-2"></i>Filter
+                                </button>
+                            </div>
+                        </div>
+                        <div id="resumes-message" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-medium"></div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">ID</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">User Email</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Title</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Template</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Downloads</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Created</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resumes-table-body" class="divide-y divide-gray-100 bg-white">
+                                    <tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">Loading resumes...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="resume-detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+                            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800">Resume Details</h3>
+                                    <p id="resume-detail-subtitle" class="text-sm text-gray-500"></p>
+                                </div>
+                                <button onclick="closeResumeDetailModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                            </div>
+                            <div class="p-6 overflow-y-auto max-h-[70vh]">
+                                <pre id="resume-detail-content" class="whitespace-pre-wrap break-words text-sm text-gray-700 bg-gray-50 p-4 rounded-lg overflow-x-auto"></pre>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'templates': `
+                    <div class="glass-card p-6 rounded-xl shadow-sm">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">Templates Management</h2>
+                                <p class="text-gray-500">Toggle premium access and active status for templates.</p>
+                            </div>
+                        </div>
+                        <div id="templates-message" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-medium"></div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50"><tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">ID</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Name</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Category</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Premium</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Active</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Action</th>
+                                </tr></thead>
+                                <tbody id="templates-table-body" class="divide-y divide-gray-100 bg-white">
+                                    <tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Loading templates...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `,
+                'contacts': `
+                    <div class="glass-card p-6 rounded-xl shadow-sm">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">Messages</h2>
+                                <p class="text-gray-500">Manage contact form submissions from site visitors.</p>
+                            </div>
+                            <div class="text-sm text-gray-600">Unread: <span id="contacts-unread-count" class="font-bold text-red-600">0</span></div>
+                        </div>
+                        <div id="contacts-message" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-medium"></div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50"><tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Name</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Email</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Message</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                                </tr></thead>
+                                <tbody id="contacts-table-body" class="divide-y divide-gray-100 bg-white">
+                                    <tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Loading messages...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="contact-view-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+                        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-hidden">
+                            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800">Conversation Thread</h3>
+                                    <p id="contact-view-meta" class="text-sm text-gray-500"></p>
+                                </div>
+                                <button onclick="closeContactModal()" class="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+                            </div>
+                            <div class="p-6 space-y-6 overflow-y-auto max-h-[74vh]">
+                                <div class="space-y-4">
+                                    <div>
+                                        <p class="text-xs font-semibold uppercase text-gray-500 mb-1">From</p>
+                                        <p id="contact-view-from" class="text-sm text-gray-800"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-semibold uppercase text-gray-500 mb-1">Subject</p>
+                                        <p id="contact-view-subject" class="text-sm text-gray-800"></p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold uppercase text-gray-500 mb-2">Thread</p>
+                                    <div id="contact-thread-list" class="space-y-4"></div>
+                                </div>
+                                <div class="border-t border-gray-200 pt-6">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <p class="text-lg font-semibold text-gray-800">Reply</p>
+                                        <button onclick="sendContactReply()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">Send Reply</button>
+                                    </div>
+                                    <div id="contact-reply-message" class="hidden mb-3 px-4 py-3 rounded-lg text-sm font-medium"></div>
+                                    <div class="space-y-3">
+                                        <input id="contact-reply-subject" type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Reply subject">
+                                        <textarea id="contact-reply-html" class="w-full h-48 px-4 py-3 border border-gray-300 rounded-lg" placeholder="Write rich HTML reply here..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
+                                <button onclick="closeContactModal()" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'newsletter': `
+                    <div class="space-y-6">
+                        <div class="glass-card p-6 rounded-xl shadow-sm">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h2 class="text-2xl font-bold text-gray-800">Newsletter</h2>
+                                    <p class="text-gray-500">Manage subscribers and export them as CSV.</p>
+                                </div>
+                                <button onclick="exportSubscribersCsv()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                                    <i class="fas fa-file-csv mr-2"></i>Export CSV
+                                </button>
+                            </div>
+                            <div id="subscribers-message" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-medium"></div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50"><tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Email</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Action</th>
+                                    </tr></thead>
+                                    <tbody id="subscribers-table-body" class="divide-y divide-gray-100 bg-white">
+                                        <tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">Loading subscribers...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="glass-card p-6 rounded-xl shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h2 class="text-2xl font-bold text-gray-800">End User Messages</h2>
+                                    <p class="text-gray-500">System message history available from live database.</p>
+                                </div>
+                            </div>
+                            <div class="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 mb-4">
+                                Section 6 note: no separate end-user messages table exists in the live database. This section uses <strong>email_log</strong> as the distinct available user-facing message source, while Section 4 uses <strong>contact_submissions</strong>.
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50"><tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Recipient</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Subject</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Template</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
+                                    </tr></thead>
+                                    <tbody id="email-log-table-body" class="divide-y divide-gray-100 bg-white">
+                                        <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Loading message log...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'settings': `
+                    <div class="glass-card p-6 rounded-xl shadow-sm">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6">Site Settings</h2>
+                        <form id="settings-form" onsubmit="saveSettings(event)">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Site Name</label>
+                                    <input type="text" id="setting-site_name" name="site_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="cvmaker.ink">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Site Email</label>
+                                    <input type="email" id="setting-site_email" name="site_email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="admin@cvmaker.ink">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
+                                    <input type="email" id="setting-contact_email" name="contact_email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="support@cvmaker.ink">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Maintenance Mode</label>
+                                    <select id="setting-maintenance_mode" name="maintenance_mode" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="0">Off</option>
+                                        <option value="1">On</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Allow Registration</label>
+                                    <select id="setting-allow_registration" name="allow_registration" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="1">Yes</option>
+                                        <option value="0">No</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-8 border-t border-gray-200 pt-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-2"><i class="fas fa-image mr-2 text-blue-600"></i>Logo & Favicon</h3>
+                                <p class="text-sm text-gray-500 mb-6">Upload your site logo and favicon. Logo: max 5MB (PNG/JPG/SVG). Favicon: max 1MB (ICO/PNG).</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Site Logo</label>
+                                        <div id="logo-preview" class="mb-3 h-16 flex items-center">
+                                            <img id="logo-img" src="" alt="Logo" class="max-h-16 hidden">
+                                            <span id="logo-placeholder" class="text-sm text-gray-400">No logo uploaded</span>
+                                        </div>
+                                        <input type="file" id="logo-upload" accept="image/png,image/jpeg,image/svg+xml,image/webp" onchange="uploadBranding('logo')" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Favicon</label>
+                                        <div id="favicon-preview" class="mb-3 h-16 flex items-center">
+                                            <img id="favicon-img" src="" alt="Favicon" class="max-h-16 hidden">
+                                            <span id="favicon-placeholder" class="text-sm text-gray-400">No favicon uploaded</span>
+                                        </div>
+                                        <input type="file" id="favicon-upload" accept="image/png,image/x-icon,image/svg+xml" onchange="uploadBranding('favicon')" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-8 border-t border-gray-200 pt-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-2">AI Settings</h3>
+                                <p class="text-sm text-gray-500 mb-6">Configure Gemini access and daily AI usage limits.</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Gemini API Key</label>
+                                        <input type="password" id="setting-gemini_api_key" name="gemini_api_key" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Not set">
+                                        <p class="mt-1 text-xs text-gray-500">Stored raw, shown masked here. Leave unchanged to keep the current key.</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Gemini Model</label>
+                                        <input type="text" id="setting-gemini_model" name="gemini_model" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="gemini-1.5-flash">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">AI Enabled</label>
+                                        <select id="setting-ai_enabled" name="ai_enabled" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="enabled">Enabled</option>
+                                            <option value="disabled">Disabled</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Free Uses Per Day</label>
+                                        <input type="number" min="0" id="setting-ai_free_uses_per_day" name="ai_free_uses_per_day" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Pro Uses Per Day</label>
+                                        <input type="text" id="setting-ai_pro_uses_per_day" name="ai_pro_uses_per_day" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="unlimited">
+                                        <p class="mt-1 text-xs text-gray-500">Use <span class="font-medium">unlimited</span> for no cap.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-8 border-t border-gray-200 pt-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-2"><i class="fab fa-paypal mr-2 text-blue-600"></i>Payment Settings</h3>
+                                <p class="text-sm text-gray-500 mb-6">Configure PayPal checkout and Pro plan pricing.</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">PayPal Client ID</label>
+                                        <input type="text" id="setting-paypal_client_id" name="paypal_client_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm" placeholder="Not set">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">PayPal Client Secret</label>
+                                        <input type="password" id="setting-paypal_client_secret" name="paypal_client_secret" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm" placeholder="Not set">
+                                        <p class="mt-1 text-xs text-gray-500">Masked for security. Leave unchanged to keep current value.</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">PayPal Environment</label>
+                                        <select id="setting-paypal_env" name="paypal_env" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="sandbox">Sandbox (Test)</option>
+                                            <option value="live">Live (Production)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">PayPal Webhook ID</label>
+                                        <input type="text" id="setting-paypal_webhook_id" name="paypal_webhook_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm" placeholder="Optional">
+                                        <p class="mt-1 text-xs text-gray-500">Used for webhook signature verification.</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Pro Plan Price</label>
+                                        <div class="flex">
+                                            <input type="number" step="0.01" min="0" id="setting-pro_plan_price" name="pro_plan_price" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="4.99">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Pro Plan Currency</label>
+                                        <select id="setting-pro_plan_currency" name="pro_plan_currency" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="USD">USD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="GBP">GBP</option>
+                                            <option value="SAR">SAR</option>
+                                            <option value="AED">AED</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Pro Plan Name</label>
+                                        <input type="text" id="setting-pro_plan_name" name="pro_plan_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="CVMaker.ink Pro">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-8 border-t border-gray-200 pt-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-2"><i class="fas fa-file-alt mr-2 text-purple-600"></i>Resume Limits</h3>
+                                <p class="text-sm text-gray-500 mb-6">Control how many resumes free and pro users can create.</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Free Tier Resume Limit</label>
+                                        <input type="number" min="0" id="setting-max_resumes_per_free_user" name="max_resumes_per_free_user" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="1">
+                                        <p class="mt-1 text-xs text-gray-500">Number of resumes a free user can create. Set to 0 to disable free resume creation.</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Pro User Resume Limit</label>
+                                        <input type="number" min="1" id="setting-max_resumes_per_user" name="max_resumes_per_user" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="10">
+                                        <p class="mt-1 text-xs text-gray-500">Maximum resumes for paid/pro users. Set to a high number for effectively unlimited.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-8 border-t border-gray-200 pt-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-2"><i class="fas fa-envelope mr-2 text-green-600"></i>Email / SMTP Settings</h3>
+                                <p class="text-sm text-gray-500 mb-6">Configure SMTP for sending emails (contact form replies, welcome emails, password resets).</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">SMTP Host</label>
+                                        <input type="text" id="setting-smtp_host" name="smtp_host" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="smtp.gmail.com">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">SMTP Port</label>
+                                        <input type="number" id="setting-smtp_port" name="smtp_port" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="587">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">SMTP Username</label>
+                                        <input type="text" id="setting-smtp_username" name="smtp_username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="you@gmail.com">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">SMTP Password</label>
+                                        <input type="password" id="setting-smtp_password" name="smtp_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="********">
+                                        <p class="mt-1 text-xs text-gray-500">App password for Gmail. Leave unchanged to keep current value.</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">From Email</label>
+                                        <input type="email" id="setting-smtp_from_email" name="smtp_from_email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="noreply@cvmaker.ink">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">From Name</label>
+                                        <input type="text" id="setting-smtp_from_name" name="smtp_from_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="CVMaker.ink">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Encryption</label>
+                                        <select id="setting-smtp_encryption" name="smtp_encryption" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="tls">TLS (Port 587)</option>
+                                            <option value="ssl">SSL (Port 465)</option>
+                                            <option value="none">None</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-end">
+                                        <button type="button" id="btn-test-email" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition w-full">
+                                            <i class="fas fa-paper-plane mr-2"></i>Send Test Email
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="test-email-result" class="hidden mt-4 px-4 py-3 rounded-lg text-sm font-medium"></div>
+                            </div>
+
+                            <div class="mt-6 flex justify-end">
+PLACEHOLDER_MARKER
+                                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                    <i class="fas fa-save mr-2"></i>Save Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                `,
+                'analytics': `
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                            <div class="glass-card p-6 rounded-xl shadow-sm"><p class="text-sm text-gray-500">Users</p><p id="analytics-users" class="text-3xl font-bold text-gray-800">0</p></div>
+                            <div class="glass-card p-6 rounded-xl shadow-sm"><p class="text-sm text-gray-500">Resumes</p><p id="analytics-resumes" class="text-3xl font-bold text-gray-800">0</p></div>
+                            <div class="glass-card p-6 rounded-xl shadow-sm"><p class="text-sm text-gray-500">Published Blogs</p><p id="analytics-blogs" class="text-3xl font-bold text-gray-800">0</p></div>
+                            <div class="glass-card p-6 rounded-xl shadow-sm"><p class="text-sm text-gray-500">New Messages</p><p id="analytics-contacts" class="text-3xl font-bold text-gray-800">0</p></div>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="glass-card p-6 rounded-xl shadow-sm">
+                                <h2 class="text-xl font-bold text-gray-800 mb-4">7 Day User Growth</h2>
+                                <div class="h-80"><canvas id="analyticsUserGrowthChart"></canvas></div>
+                            </div>
+                            <div class="glass-card p-6 rounded-xl shadow-sm">
+                                <h2 class="text-xl font-bold text-gray-800 mb-4">Template Usage</h2>
+                                <div class="h-80"><canvas id="analyticsTemplateChart"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="glass-card p-6 rounded-xl shadow-sm">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4">Summary</h2>
+                            <div id="analytics-summary" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm"></div>
+                        </div>
+                    </div>
+                `
+            };
+            
+            container.innerHTML = content[section] || '<div>Section not found</div>';
+
+            if (section === 'settings') {
+                loadSettings();
+            }
+            if (section === 'admins') {
+                loadAdminsSection();
+            }
+            if (section === 'seo') {
+                loadSeoSection();
+            }
+            if (section === 'users') {
+                loadUsersSection();
+            }
+            if (section === 'resumes') {
+                loadResumesSection();
+            }
+            if (section === 'blogs') {
+                loadBlogsSection();
+            }
+            if (section === 'templates') {
+                loadTemplatesSection();
+            }
+            if (section === 'contacts') {
+                loadContactsSection();
+            }
+            if (section === 'pages') {
+                loadPagesSection();
+            }
+            if (section === 'newsletter') {
+                loadSubscribersSection();
+                loadEmailLogSection();
+            }
+            if (section === 'analytics') {
+                loadAnalyticsSection();
+            }
+        }
+
+        // ===== ADMIN MANAGEMENT FUNCTIONS =====
+        async function loadAdminsSection() {
+            const tbody = document.getElementById('admins-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">Loading admins...</td></tr>';
+
+            try {
+                const response = await fetch('/api/admin.php?action=admin-users', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to load admins');
+
+                if (!data.admins.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No admin users found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.admins.map(admin => {
+                    const role = admin.role || 'admin';
+                    const isSuper = role === 'super_admin';
+                    const isActive = admin.is_active == 1;
+                    const roleBadge = isSuper 
+                        ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-crown mr-1"></i>Super Admin</span>'
+                        : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><i class="fas fa-user-shield mr-1"></i>Admin</span>';
+                    const statusBadge = isActive
+                        ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>'
+                        : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Suspended</span>';
+                    
+                    return `
+                    <tr class="${isSuper ? 'bg-red-50/30' : ''}">
+                        <td class="px-4 py-3 text-sm text-gray-700">${admin.id}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${admin.email || ''}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${[admin.first_name || '', admin.last_name || ''].join(' ').trim() || '-'}</td>
+                        <td class="px-4 py-3">${roleBadge}</td>
+                        <td class="px-4 py-3">${statusBadge}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">${admin.last_login_at ? new Date(admin.last_login_at).toLocaleString() : 'Never'}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex gap-2">
+                                <button onclick="toggleAdminStatus(${admin.id}, ${isActive ? 0 : 1})" class="px-3 py-2 ${isActive ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'} text-white rounded-lg text-sm" title="${isActive ? 'Suspend' : 'Activate'}">
+                                    <i class="fas ${isActive ? 'fa-ban' : 'fa-check'}"></i>
+                                </button>
+                                <button onclick="openResetPasswordModal(${admin.id}, '${admin.email}')" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm" title="Reset Password">
+                                    <i class="fas fa-key"></i>
+                                </button>
+                                ${admin.email !== 'Admin@admin.admin' ? `<button onclick="deleteAdmin(${admin.id}, '${admin.email}')" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-red-500">${error.message}</td></tr>`;
+            }
+        }
+
+        function showAdminsMessage(message, type = 'success') {
+            const box = document.getElementById('admins-message');
+            if (!box) return;
+            box.className = `mb-4 px-4 py-3 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            box.textContent = message;
+            box.classList.remove('hidden');
+        }
+
+        function openAddAdminModal() {
+            document.getElementById('add-admin-modal').classList.remove('hidden');
+            document.getElementById('admin-create-message').classList.add('hidden');
+        }
+
+        function closeAddAdminModal() {
+            document.getElementById('add-admin-modal').classList.add('hidden');
+            document.getElementById('admin-first-name').value = '';
+            document.getElementById('admin-last-name').value = '';
+            document.getElementById('admin-email').value = '';
+            document.getElementById('admin-password').value = '';
+        }
+
+        async function createAdmin() {
+            const first_name = document.getElementById('admin-first-name').value.trim();
+            const last_name = document.getElementById('admin-last-name').value.trim();
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value;
+            const role = document.getElementById('admin-role').value;
+            const msgBox = document.getElementById('admin-create-message');
+
+            if (!first_name || !last_name || !email || !password) {
+                msgBox.className = 'mt-3 px-4 py-3 rounded-lg text-sm font-medium bg-red-100 text-red-700';
+                msgBox.textContent = 'All fields are required';
+                msgBox.classList.remove('hidden');
+                return;
+            }
+
+            if (password.length < 8) {
+                msgBox.className = 'mt-3 px-4 py-3 rounded-lg text-sm font-medium bg-red-100 text-red-700';
+                msgBox.textContent = 'Password must be at least 8 characters';
+                msgBox.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin.php?action=admin-users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({ first_name, last_name, email, password, role })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to create admin');
+                
+                showAdminsMessage('Admin created successfully. They must change password on first login.');
+                closeAddAdminModal();
+                loadAdminsSection();
+            } catch (error) {
+                msgBox.className = 'mt-3 px-4 py-3 rounded-lg text-sm font-medium bg-red-100 text-red-700';
+                msgBox.textContent = error.message;
+                msgBox.classList.remove('hidden');
+            }
+        }
+
+        async function toggleAdminStatus(adminId, newStatus) {
+            try {
+                const response = await fetch(`/api/admin.php?action=admin-users&id=${adminId}&mode=toggle-active`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({ is_active: newStatus })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to update status');
+                
+                showAdminsMessage(newStatus ? 'Admin activated successfully.' : 'Admin suspended successfully.');
+                loadAdminsSection();
+            } catch (error) {
+                showAdminsMessage(error.message, 'error');
+            }
+        }
+
+        function openResetPasswordModal(adminId, email) {
+            const password = prompt(`Reset password for ${email}:\n\nEnter new password (min 8 characters):`);
+            if (!password) return;
+            if (password.length < 8) {
+                showAdminsMessage('Password must be at least 8 characters', 'error');
+                return;
+            }
+            resetAdminPassword(adminId, password);
+        }
+
+        async function resetAdminPassword(adminId, password) {
+            try {
+                const response = await fetch(`/api/admin.php?action=admin-users&id=${adminId}&mode=reset-password`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({ password })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to reset password');
+                
+                showAdminsMessage('Password reset successfully. User must change password on next login.');
+            } catch (error) {
+                showAdminsMessage(error.message, 'error');
+            }
+        }
+
+        async function deleteAdmin(adminId, email) {
+            if (!confirm(`Are you sure you want to delete admin "${email}"?\n\nThis action cannot be undone.`)) return;
+            
+            try {
+                const response = await fetch(`/api/admin.php?action=admin-users&id=${adminId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to delete admin');
+                
+                showAdminsMessage('Admin deleted successfully.');
+                loadAdminsSection();
+            } catch (error) {
+                showAdminsMessage(error.message, 'error');
+            }
+        }
+
+        async function loadUsersSection() {
+            const search = document.getElementById('users-search')?.value?.trim() || '';
+            const tbody = document.getElementById('users-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">Loading users...</td></tr>';
+
+            try {
+                const url = `/api/admin.php?action=users${search ? `&search=${encodeURIComponent(search)}` : ''}`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to load users');
+
+                const regularUsers = (data.users || []).filter(user => !['admin', 'super_admin'].includes((user.role || 'user')));
+
+                if (!regularUsers.length) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">No users found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = regularUsers.map(user => {
+                    return `
+                    <tr>
+                        <td class="px-4 py-3 text-sm text-gray-700">${user.id}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${user.email || ''}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${[user.first_name || '', user.last_name || ''].join(' ').trim() || '-'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 capitalize">${(user.role || 'user').replace('_', ' ')}</td>
+                        <td class="px-4 py-3">
+                            <select id="tier-${user.id}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="free" ${user.subscription_tier === 'free' ? 'selected' : ''}>Free</option>
+                                <option value="pro" ${user.subscription_tier === 'pro' ? 'selected' : ''}>Pro</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-3">
+                            <select id="ai-${user.id}" onchange="updateUserAI(${user.id})" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="default" ${user.ai_enabled === null ? 'selected' : ''}>Default</option>
+                                <option value="1" ${String(user.ai_enabled) === '1' ? 'selected' : ''}>Enabled</option>
+                                <option value="0" ${String(user.ai_enabled) === '0' ? 'selected' : ''}>Disabled</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-3">
+                            <input type="date" id="expires-${user.id}" value="${user.subscription_expires || ''}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${(user.created_at || '').slice(0, 10)}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex gap-2">
+                                <button onclick="updateUser(${user.id})" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">Save</button>
+                                <button onclick="deleteUser(${user.id})" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                }).join('');
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-red-500">${error.message}</td></tr>`;
+            }
+        }
+
+        function showUsersMessage(message, type = 'success') {
+            const box = document.getElementById('users-message');
+            if (!box) return;
+            box.className = `mb-4 px-4 py-3 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            box.textContent = message;
+            box.classList.remove('hidden');
+        }
+
+        async function updateUser(userId) {
+            const subscription_tier = document.getElementById(`tier-${userId}`).value;
+            const subscription_expires = document.getElementById(`expires-${userId}`).value;
+            const roleEl = document.getElementById(`role-${userId}`);
+            const role = roleEl ? roleEl.value : 'user';
+            try {
+                const response = await fetch(`/api/admin.php?action=users&id=${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({ subscription_tier, subscription_expires, role })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to update user');
+                showUsersMessage('User updated successfully.');
+                loadUsersSection();
+            } catch (error) {
+                showUsersMessage(error.message, 'error');
+            }
+        }
+
+        async function updateUserRole(userId) {
+            const roleEl = document.getElementById(`role-${userId}`);
+            const role = roleEl ? roleEl.value : 'user';
+            const subscription_tier = document.getElementById(`tier-${userId}`).value;
+            const subscription_expires = document.getElementById(`expires-${userId}`).value;
+            try {
+                const response = await fetch(`/api/admin.php?action=users&id=${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({ subscription_tier, subscription_expires, role })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to update role');
+                showUsersMessage(`Role updated to ${role === 'super_admin' ? 'Super Admin' : role === 'admin' ? 'Admin' : 'User'}.`);
+                loadUsersSection();
+            } catch (error) {
+                showUsersMessage(error.message, 'error');
+            }
+        }
+
+        async function updateUserAI(userId) {
+            const raw = document.getElementById(`ai-${userId}`).value;
+            const ai_enabled = raw === 'default' ? null : Number(raw);
+            try {
+                const response = await fetch(`/api/admin.php?action=users&id=${userId}&mode=ai-access`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({ ai_enabled })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to update AI access');
+                showUsersMessage('AI access updated successfully.');
+            } catch (error) {
+                showUsersMessage(error.message, 'error');
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('Delete this user? This cannot be undone.')) return;
+            try {
+                const response = await fetch(`/api/admin.php?action=users&id=${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to delete user');
+                showUsersMessage('User deleted successfully.');
+                loadUsersSection();
+            } catch (error) {
+                showUsersMessage(error.message, 'error');
+            }
+        }
+
+        async function loadResumesSection() {
+            const filter = document.getElementById('resumes-user-filter')?.value?.trim() || '';
+            const tbody = document.getElementById('resumes-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Loading resumes...</td></tr>';
+
+            try {
+                const url = `/api/admin.php?action=resumes${filter ? `&user=${encodeURIComponent(filter)}` : ''}`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to load resumes');
+
+                if (!data.resumes.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No resumes found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.resumes.map(resume => `
+                    <tr>
+                        <td class="px-4 py-3 text-sm text-gray-700">${resume.id}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${resume.email || ''}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${resume.title || ''}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${resume.template_name || '-'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${resume.download_count ?? 0}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${(resume.created_at || '').slice(0, 10)}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex gap-2">
+                                <button onclick="viewResumeDetail(${resume.id})" class="px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm">View</button>
+                                <button onclick="deleteResume(${resume.id})" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-red-500">${error.message}</td></tr>`;
+            }
+        }
+
+        function showResumesMessage(message, type = 'success') {
+            const box = document.getElementById('resumes-message');
+            if (!box) return;
+            box.className = `mb-4 px-4 py-3 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            box.textContent = message;
+            box.classList.remove('hidden');
+        }
+
+        async function viewResumeDetail(resumeId) {
+            try {
+                const response = await fetch(`/api/admin.php?action=resumes&id=${resumeId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to load resume details');
+
+                const resume = data.resume;
+                document.getElementById('resume-detail-subtitle').textContent = `${resume.email || ''} • ${resume.title || ''}`;
+                let content = resume.content;
+                try {
+                    const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+                    content = JSON.stringify(parsed, null, 2);
+                } catch (_) {}
+                document.getElementById('resume-detail-content').textContent = content || 'No content available.';
+                document.getElementById('resume-detail-modal').classList.remove('hidden');
+            } catch (error) {
+                showResumesMessage(error.message, 'error');
+            }
+        }
+
+        function closeResumeDetailModal() {
+            document.getElementById('resume-detail-modal')?.classList.add('hidden');
+        }
+
+        async function deleteResume(resumeId) {
+            if (!confirm('Delete this resume? This cannot be undone.')) return;
+            try {
+                const response = await fetch(`/api/admin.php?action=resumes&id=${resumeId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to delete resume');
+                showResumesMessage('Resume deleted successfully.');
+                loadResumesSection();
+            } catch (error) {
+                showResumesMessage(error.message, 'error');
+            }
+        }
+
+        function showTemplatesMessage(message, type = 'success') {
+            const box = document.getElementById('templates-message');
+            if (!box) return;
+            box.className = `mb-4 px-4 py-3 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            box.textContent = message;
+            box.classList.remove('hidden');
+        }
+
+        async function loadTemplatesSection() {
+            const tbody = document.getElementById('templates-table-body');
+            if (!tbody) return;
+            const response = await fetch('/api/admin.php?action=templates', { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` } });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">${data.error || 'Failed to load templates'}</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.templates.map(t => `
+                <tr>
+                    <td class="px-4 py-3 text-sm text-gray-700">${t.id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${t.name}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 capitalize">${t.category || '-'}</td>
+                    <td class="px-4 py-3"><input type="checkbox" id="template-premium-${t.id}" ${Number(t.is_premium) ? 'checked' : ''}></td>
+                    <td class="px-4 py-3"><input type="checkbox" id="template-active-${t.id}" ${Number(t.is_active) ? 'checked' : ''}></td>
+                    <td class="px-4 py-3"><button onclick="saveTemplate(${t.id})" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">Save</button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function saveTemplate(id) {
+            try {
+                const is_premium = document.getElementById(`template-premium-${id}`).checked ? 1 : 0;
+                const is_active = document.getElementById(`template-active-${id}`).checked ? 1 : 0;
+                const response = await fetch(`/api/admin.php?action=templates&id=${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` },
+                    body: JSON.stringify({ is_premium, is_active })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to update template');
+                showTemplatesMessage('Template updated successfully.');
+            } catch (error) {
+                showTemplatesMessage(error.message, 'error');
+            }
+        }
+
+        function showContactsMessage(message, type = 'success') {
+            const box = document.getElementById('contacts-message');
+            if (!box) return;
+            box.className = `mb-4 px-4 py-3 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            box.textContent = message;
+            box.classList.remove('hidden');
+        }
+
+        let currentContacts = [];
+        let currentContactThread = null;
+
+        async function loadContactsSection() {
+            const tbody = document.getElementById('contacts-table-body');
+            if (!tbody) return;
+            const response = await fetch('/api/admin.php?action=contacts', { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` } });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">${data.error || 'Failed to load messages'}</td></tr>`;
+                return;
+            }
+            currentContacts = Array.isArray(data.contacts) ? data.contacts : [];
+            const unread = currentContacts.filter(c => c.status === 'new').length;
+            updateContactBadge(unread);
+            const unreadEl = document.getElementById('contacts-unread-count');
+            if (unreadEl) unreadEl.textContent = unread;
+            tbody.innerHTML = currentContacts.map((c, index) => `
+                <tr>
+                    <td class="px-4 py-3 text-sm text-gray-700">${c.name || ''}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${c.email || ''}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 max-w-md truncate" title="${(c.message || '').replace(/"/g, '&quot;')}">${c.message || ''}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${(c.created_at || '').slice(0, 10)}</td>
+                    <td class="px-4 py-3 text-sm ${c.status === 'new' ? 'text-red-600 font-semibold' : 'text-gray-700'}">${c.status}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex gap-2">
+                            <button onclick="viewContactByIndex(${index})" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">View</button>
+                            <button onclick="toggleContactStatus(${c.id}, '${c.status === 'new' ? 'read' : 'new'}')" class="px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm">${c.status === 'new' ? 'Mark Read' : 'Mark Unread'}</button>
+                            <button onclick="deleteContact(${c.id})" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateContactBadge(unread) {
+            const badge = document.getElementById('contact-badge');
+            if (!badge) return;
+            badge.textContent = String(unread);
+            badge.classList.toggle('hidden', Number(unread) <= 0);
+        }
+
+        async function viewContact(contact) {
+            currentContactThread = contact;
+            document.getElementById('contact-view-from').textContent = `${contact.name || ''} <${contact.email || ''}>`;
+            document.getElementById('contact-view-subject').textContent = contact.subject || '-';
+            document.getElementById('contact-view-meta').textContent = (contact.created_at || '').slice(0, 19).replace('T', ' ');
+            document.getElementById('contact-reply-subject').value = `Re: ${contact.subject || 'Your message to CVMaker.ink'}`;
+            document.getElementById('contact-reply-html').value = `<p>Hello ${contact.name || ''},</p><p></p><p>Best regards,<br>Customer Support</p>`;
+            document.getElementById('contact-view-modal').classList.remove('hidden');
+            document.getElementById('contact-view-modal').classList.add('flex');
+            await loadContactThread(contact.id);
+        }
+
+        function viewContactByIndex(index) {
+            const contact = currentContacts[index];
+            if (!contact) return;
+            viewContact(contact);
+        }
+
+        async function loadContactThread(contactId) {
+            const list = document.getElementById('contact-thread-list');
+            if (!list) return;
+            list.innerHTML = '<div class="text-sm text-gray-500">Loading thread...</div>';
+            try {
+                const response = await fetch(`/api/admin.php?action=contact-replies&contact_id=${contactId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to load thread');
+                const contact = data.contact || currentContactThread || {};
+                const replies = Array.isArray(data.replies) ? data.replies : [];
+                const threadHtml = [
+                    `<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold uppercase text-gray-500">Original message</span>
+                            <span class="text-xs text-gray-500">${(contact.created_at || '').slice(0,19).replace('T',' ')}</span>
+                        </div>
+                        <div class="text-sm text-gray-800 whitespace-pre-wrap">${escapeHtml(contact.message || '')}</div>
+                    </div>`
+                ];
+                replies.forEach(reply => {
+                    threadHtml.push(`
+                        <div class="rounded-lg border ${reply.direction === 'outbound' ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white'} p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold uppercase ${reply.direction === 'outbound' ? 'text-blue-700' : 'text-gray-500'}">${reply.direction === 'outbound' ? 'Support reply' : 'Inbound reply'}</span>
+                                <span class="text-xs text-gray-500">${(reply.created_at || '').slice(0,19).replace('T',' ')}</span>
+                            </div>
+                            <div class="text-sm text-gray-800">${reply.body_html || escapeHtml(reply.body_text || '')}</div>
+                        </div>
+                    `);
+                });
+                list.innerHTML = threadHtml.join('');
+            } catch (error) {
+                list.innerHTML = `<div class="text-sm text-red-500">${error.message}</div>`;
+            }
+        }
+
+        function showContactReplyMessage(message, type = 'success') {
+            const box = document.getElementById('contact-reply-message');
+            if (!box) return;
+            box.className = `mb-3 px-4 py-3 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            box.textContent = message;
+            box.classList.remove('hidden');
+        }
+
+        async function sendContactReply() {
+            if (!currentContactThread) return;
+            const subject = document.getElementById('contact-reply-subject').value.trim();
+            const body_html = document.getElementById('contact-reply-html').value.trim();
+            if (!body_html) {
+                showContactReplyMessage('Reply body is required.', 'error');
+                return;
+            }
+            try {
+                const response = await fetch('/api/admin.php?action=contact-replies', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                    },
+                    body: JSON.stringify({
+                        contact_id: currentContactThread.id,
+                        subject,
+                        body_html
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to send reply');
+                showContactReplyMessage('Reply sent successfully.');
+                await loadContactThread(currentContactThread.id);
+                await loadContactsSection();
+            } catch (error) {
+                showContactReplyMessage(error.message, 'error');
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function closeContactModal() {
+            const modal = document.getElementById('contact-view-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function toggleContactStatus(id, status) {
+            try {
+                const response = await fetch(`/api/admin.php?action=contacts&id=${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` },
+                    body: JSON.stringify({ status, notes: '' })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to update message');
+                showContactsMessage('Message updated successfully.');
+                loadContactsSection();
+            } catch (error) {
+                showContactsMessage(error.message, 'error');
+            }
+        }
+
+        async function deleteContact(id) {
+            if (!confirm('Delete this message?')) return;
+            try {
+                const response = await fetch(`/api/admin.php?action=contacts&id=${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to delete message');
+                showContactsMessage('Message deleted successfully.');
+                loadContactsSection();
+            } catch (error) {
+                showContactsMessage(error.message, 'error');
+            }
+        }
+
+        function showPagesMessage(message, type = 'success') {
+            const box = document.getElementById('pages-message');
+            if (!box) return;
+            box.className = `mb-4 px-4 py-3 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            box.textContent = message;
+            box.classList.remove('hidden');
+        }
+
+        async function loadPagesSection() {
+            const list = document.getElementById('pages-list');
+            if (!list) return;
+            const response = await fetch('/api/admin.php?action=pages', { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` } });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                list.innerHTML = `<div class="text-red-500">${data.error || 'Failed to load pages'}</div>`;
+                return;
+            }
+            const pages = data.pages.filter(p => ['home','about','contact','privacy','terms'].includes((p.page_type || '').toLowerCase()) || ['home','about','contact','privacy policy','terms'].includes((p.title || '').toLowerCase()));
+            const usablePages = pages.length ? pages : data.pages;
+            window.__adminPages = usablePages;
+            list.innerHTML = usablePages.map((p, idx) => {
+                const niceType = formatPageLabel(p.page_type || p.title || 'Page');
+                return `<button onclick="selectPageByIndex(${idx})" class="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 ${idx === 0 ? 'bg-blue-50 border-blue-300' : ''}">
+                    <div class="font-medium text-gray-800">${niceType}</div>
+                    <div class="text-xs text-gray-500 truncate">${p.title || ''}</div>
+                </button>`;
+            }).join('');
+            if (usablePages[0]) selectPageByIndex(0);
+        }
+
+        function formatPageLabel(value) {
+            const v = String(value || '').toLowerCase();
+            const map = {
+                home: 'Home',
+                about: 'About',
+                contact: 'Contact',
+                privacy: 'Privacy Policy',
+                'privacy policy': 'Privacy Policy',
+                terms: 'Terms'
+            };
+            return map[v] || String(value || 'Page').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        }
+
+        function selectPageByIndex(index) {
+            const page = (window.__adminPages || [])[index];
+            if (!page) return;
+            document.querySelectorAll('#pages-list button').forEach((btn, i) => {
+                btn.classList.toggle('bg-blue-50', i === index);
+                btn.classList.toggle('border-blue-300', i === index);
+            });
+            selectPage(page);
+        }
+
+        function selectPage(page) {
+            document.getElementById('page-id').value = page.id || '';
+            document.getElementById('page-editor-title').value = page.title || '';
+            document.getElementById('page-content').value = page.content || '';
+        }
+
+        async function savePage() {
+            const id = document.getElementById('page-id').value;
+            try {
+                const response = await fetch(`/api/admin.php?action=pages&id=${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` },
+                    body: JSON.stringify({
+                        title: document.getElementById('page-editor-title').value,
+                        content: document.getElementById('page-content').value,
+                        status: 'published'
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to save page');
+                showPagesMessage('Page updated successfully.');
+                loadPagesSection();
+            } catch (error) {
+                showPagesMessage(error.message, 'error');
+            }
+        }
+
+        function showSubscribersMessage(message, type = 'success') {
+            const box = document.getElementById('subscribers-message');
+            if (!box) return;
+            box.className = `mb-4 px-4 py-3 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            box.textContent = message;
+            box.classList.remove('hidden');
+        }
+
+        async function loadSubscribersSection() {
+            const tbody = document.getElementById('subscribers-table-body');
+            if (!tbody) return;
+            const response = await fetch('/api/admin.php?action=subscribers', { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` } });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-red-500">${data.error || 'Failed to load subscribers'}</td></tr>`;
+                return;
+            }
+            if (!data.subscribers.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">No subscribers found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.subscribers.map(s => `
+                <tr>
+                    <td class="px-4 py-3 text-sm text-gray-700">${s.email}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${s.status}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${(s.created_at || '').slice(0,10)}</td>
+                    <td class="px-4 py-3"><button onclick="deleteSubscriber(${s.id})" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">Delete</button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteSubscriber(id) {
+            if (!confirm('Delete this subscriber?')) return;
+            try {
+                const response = await fetch(`/api/admin.php?action=subscribers&id=${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Failed to delete subscriber');
+                showSubscribersMessage('Subscriber deleted successfully.');
+                loadSubscribersSection();
+            } catch (error) {
+                showSubscribersMessage(error.message, 'error');
+            }
+        }
+
+        async function exportSubscribersCsv() {
+            const response = await fetch('/api/admin.php?action=subscribers', { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` } });
+            const data = await response.json();
+            if (!response.ok || !data.success) return showSubscribersMessage(data.error || 'Failed to export subscribers', 'error');
+            const rows = [['Email','Status','Date'], ...data.subscribers.map(s => [s.email, s.status, (s.created_at || '').slice(0,10)])];
+            const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'newsletter-subscribers.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function refreshSidebarBadges() {
+            try {
+                const response = await fetch('/api/admin.php?action=contacts', { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` } });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    updateContactBadge(data.contacts.filter(c => c.status === 'new').length);
+                }
+            } catch (_) {}
+        }
+
+        async function loadEmailLogSection() {
+            const tbody = document.getElementById('email-log-table-body');
+            if (!tbody) return;
+            const response = await fetch('/api/admin.php?action=email-log', { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` } });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-red-500">${data.error || 'Failed to load email log'}</td></tr>`;
+                return;
+            }
+            if (!data.logs.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No end-user message log found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.logs.map(log => `
+                <tr>
+                    <td class="px-4 py-3 text-sm text-gray-700">${log.recipient_email || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${log.subject || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${log.template_name || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${log.status || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${(log.created_at || '').slice(0,10)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function showBlogsMessage(message, type = 'success') {
+            const box = document.getElementById('blogs-message');
+            if (!box) return;
+            box.className = `mb-4 px-4 py-3 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            box.textContent = message;
+            box.classList.remove('hidden');
+        }
+
+        async function loadBlogsSection() {
+            const tbody = document.getElementById('blogs-table-body');
+            if (!tbody) return;
+            try {
+                const data = await apiRequest('blogs');
+                if (!data.success) throw new Error(data.error || 'Failed to load blog posts');
+                if (!data.blogs.length) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No blog posts yet.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.blogs.map(blog => `
+                    <tr>
+                        <td class="px-4 py-3 text-sm text-gray-700">${blog.title || ''}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${blog.slug || ''}</td>
+                        <td class="px-4 py-3 text-sm"><span class="px-2 py-1 rounded-full text-xs ${blog.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${blog.status}</span></td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${(blog.created_at || '').slice(0,10)}</td>
+                        <td class="px-4 py-3"><div class="flex gap-2"><button onclick="editBlogPost(${blog.id})" class="px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm">Edit</button><button onclick="deleteBlogPost(${blog.id})" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">Delete</button></div></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-red-500">${error.message}</td></tr>`;
+            }
+        }
+
+        function slugifyBlogTitle(title) {
+            return String(title || '').toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+        }
+
+        function openBlogEditor(blog = null) {
+            document.getElementById('blog-editor-modal').classList.remove('hidden');
+            document.getElementById('blog-editor-title').textContent = blog ? 'Edit Blog Post' : 'New Blog Post';
+            document.getElementById('blog-id').value = blog?.id || '';
+            document.getElementById('blog-title-input').value = blog?.title || '';
+            document.getElementById('blog-slug-input').value = blog?.slug || '';
+            document.getElementById('blog-excerpt-input').value = blog?.excerpt || '';
+            document.getElementById('blog-content-input').value = blog?.content || '';
+            document.getElementById('blog-image-input').value = blog?.featured_image || '';
+            document.getElementById('blog-status-input').value = blog?.status || 'draft';
+            document.getElementById('blog-meta-title-input').value = blog?.meta_title || '';
+            document.getElementById('blog-meta-description-input').value = blog?.meta_description || '';
+            document.getElementById('blog-meta-keywords-input').value = blog?.meta_keywords || '';
+        }
+
+        function closeBlogEditor() {
+            document.getElementById('blog-editor-modal')?.classList.add('hidden');
+        }
+
+        async function editBlogPost(id) {
+            try {
+                const data = await apiRequest('blogs');
+                if (!data.success) throw new Error(data.error || 'Failed to load blog posts');
+                const blog = (data.blogs || []).find(b => Number(b.id) === Number(id));
+                if (!blog) throw new Error('Blog post not found');
+                openBlogEditor(blog);
+            } catch (error) {
+                showBlogsMessage(error.message, 'error');
+            }
+        }
+
+        async function saveBlogPost() {
+            try {
+                const id = document.getElementById('blog-id').value;
+                const title = document.getElementById('blog-title-input').value.trim();
+                const slug = document.getElementById('blog-slug-input').value.trim() || slugifyBlogTitle(title);
+                const payload = {
+                    title,
+                    slug,
+                    excerpt: document.getElementById('blog-excerpt-input').value,
+                    content: document.getElementById('blog-content-input').value,
+                    featured_image: document.getElementById('blog-image-input').value,
+                    status: document.getElementById('blog-status-input').value,
+                    meta_title: document.getElementById('blog-meta-title-input').value || title,
+                    meta_description: document.getElementById('blog-meta-description-input').value,
+                    meta_keywords: document.getElementById('blog-meta-keywords-input').value
+                };
+                const data = await apiRequest(`blogs${id ? `&id=${id}` : ''}`, id ? 'PUT' : 'POST', payload);
+                if (!data.success) throw new Error(data.error || 'Failed to save blog post');
+                showBlogsMessage('Blog post saved successfully.');
+                closeBlogEditor();
+                loadBlogsSection();
+                loadDashboard();
+            } catch (error) {
+                showBlogsMessage(error.message, 'error');
+            }
+        }
+
+        async function deleteBlogPost(id) {
+            if (!confirm('Delete this blog post?')) return;
+            try {
+                const data = await apiRequest(`blogs&id=${id}`, 'DELETE');
+                if (!data.success) throw new Error(data.error || 'Failed to delete blog post');
+                showBlogsMessage('Blog post deleted successfully.');
+                loadBlogsSection();
+                loadDashboard();
+            } catch (error) {
+                showBlogsMessage(error.message, 'error');
+            }
+        }
+
+        async function loadAnalyticsSection() {
+            try {
+                const stats = await apiRequest('stats');
+                if (!stats.success) throw new Error(stats.error || 'Failed to load analytics');
+                document.getElementById('analytics-users').textContent = stats.stats.users || 0;
+                document.getElementById('analytics-resumes').textContent = stats.stats.resumes || 0;
+                document.getElementById('analytics-blogs').textContent = stats.stats.published_blogs || 0;
+                document.getElementById('analytics-contacts').textContent = stats.stats.new_contacts || 0;
+                const summary = document.getElementById('analytics-summary');
+                summary.innerHTML = `
+                    <div class="rounded-lg bg-blue-50 p-4"><div class="text-xs text-blue-600 font-semibold uppercase">New Users Today</div><div class="text-2xl font-bold text-blue-900 mt-1">${stats.stats.new_users_today || 0}</div></div>
+                    <div class="rounded-lg bg-purple-50 p-4"><div class="text-xs text-purple-600 font-semibold uppercase">Templates</div><div class="text-2xl font-bold text-purple-900 mt-1">${stats.stats.templates || 0}</div></div>
+                    <div class="rounded-lg bg-amber-50 p-4"><div class="text-xs text-amber-600 font-semibold uppercase">Top Template</div><div class="text-lg font-bold text-amber-900 mt-1">${stats.stats.template_usage?.[0]?.name || 'N/A'}</div></div>
+                `;
+
+                const userCtx = document.getElementById('analyticsUserGrowthChart');
+                if (userCtx) {
+                    if (window.analyticsUserChart) window.analyticsUserChart.destroy();
+                    window.analyticsUserChart = new Chart(userCtx, {
+                        type: 'line',
+                        data: {
+                            labels: stats.stats.weekly_users?.map(u => u.date) || [],
+                            datasets: [{ label: 'New Users', data: stats.stats.weekly_users?.map(u => u.count) || [], borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.35 }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+                }
+                const tplCtx = document.getElementById('analyticsTemplateChart');
+                if (tplCtx) {
+                    if (window.analyticsTemplateChart) window.analyticsTemplateChart.destroy();
+                    window.analyticsTemplateChart = new Chart(tplCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: stats.stats.template_usage?.map(t => t.name) || [],
+                            datasets: [{ data: stats.stats.template_usage?.map(t => t.count) || [], backgroundColor: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444'] }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+                }
+            } catch (error) {
+                const summary = document.getElementById('analytics-summary');
+                if (summary) summary.innerHTML = `<div class="text-red-500">${error.message}</div>`;
+            }
+        }
+    </script>
+    <script src="seo-functions.js"></script>
+</body>
+</html>

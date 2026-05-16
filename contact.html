@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - cvmaker.ink</title>
+    <meta name="description" content="Contact cvmaker.ink for support, questions, or feedback about your account, resume builder tools, templates, or subscription options.">
+    <meta property="og:title" content="Contact Us - cvmaker.ink">
+    <meta property="og:description" content="Contact cvmaker.ink for support, questions, or feedback about your account, resume builder tools, templates, or subscription options.">
+    <meta property="og:image" content="https://cvmaker.ink/assets/og-default.jpg">
+    <meta property="og:url" content="https://cvmaker.ink/contact.html">
+    <link rel="canonical" href="https://cvmaker.ink/contact.html">
+    <!-- Tracking Code Loader -->
+    <script src="/assets/js/tracking-loader.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
+        .input-field { border: 2px solid #e5e7eb; transition: all 0.3s; }
+        .input-field:focus { border-color: #3B82F6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    </style>
+  <script src="/branding.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <nav class="fixed w-full bg-white/95 backdrop-blur shadow-sm z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-2 text-2xl font-bold text-gray-900"><img src="/uploads/branding/cvmaker-logo-20260515.svg" alt="cvmaker.ink" class="h-16 w-auto max-w-[320px] object-contain" /></a>
+                <div class="flex space-x-6">
+                    <a href="/" class="text-gray-600 hover:text-blue-600 font-medium">Home</a>
+                    <a href="/templates.html" class="text-gray-600 hover:text-blue-600 font-medium">Templates</a>
+                    <a href="/contact.html" class="text-gray-600 hover:text-blue-600 font-medium">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="pt-24 pb-12 px-4">
+        <div class="max-w-2xl mx-auto">
+            <div class="text-center mb-12">
+                <h1 class="text-4xl font-bold text-gray-800 mb-4">Contact Us</h1>
+                <p class="text-gray-600">Have a question? We'd love to hear from you.</p>
+            </div>
+            
+            <!-- Success Message -->
+            <div id="successMsg" class="hidden mb-6 p-4 bg-green-100 text-green-800 rounded-lg text-center">
+                <i class="fas fa-check-circle mr-2"></i>Thank you! Your message has been sent successfully.
+            </div>
+            
+            <!-- Error Message -->
+            <div id="errorMsg" class="hidden mb-6 p-4 bg-red-100 text-red-800 rounded-lg text-center">
+                <i class="fas fa-exclamation-triangle mr-2"></i><span id="errorText">Something went wrong. Please try again.</span>
+            </div>
+            
+            <div class="glass rounded-2xl shadow-xl p-8">
+                <form id="contactForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Your Name *</label>
+                            <input type="text" id="name" name="name" required
+                                class="input-field w-full px-4 py-3 rounded-xl"
+                                placeholder="John Doe">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+                            <input type="email" id="email" name="email" required
+                                class="input-field w-full px-4 py-3 rounded-xl"
+                                placeholder="john@example.com">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Subject *</label>
+                        <input type="text" id="subject" name="subject" required
+                            class="input-field w-full px-4 py-3 rounded-xl"
+                            placeholder="How can we help?">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Your Message *</label>
+                        <textarea id="message" name="message" rows="5" required
+                            class="input-field w-full px-4 py-3 rounded-xl"
+                            placeholder="Tell us about your project..."></textarea>
+                    </div>
+                    
+                    <button type="submit" id="submitBtn" 
+                        class="btn-primary text-white px-8 py-3 rounded-xl font-bold w-full hover:opacity-90 transition">
+                        <i class="fas fa-paper-plane mr-2"></i>Send Message
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-gray-900 text-white py-12 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p>&copy; 2026 cvmaker.ink. All rights reserved.</p>
+            <div class="mt-4 space-x-4">
+                <a href="/" class="text-gray-400 hover:text-white">Home</a>
+                <a href="/privacy.html" class="text-gray-400 hover:text-white">Privacy Policy</a>
+                <a href="/terms.html" class="text-gray-400 hover:text-white">Terms of Service</a>
+                <a href="/about.html" class="text-gray-400 hover:text-white">About</a>
+                <a href="/contact.html" class="text-gray-400 hover:text-white">Contact Us</a>
+                <a href="/help-center.html" class="text-gray-400 hover:text-white">Help Center</a>
+                <a href="/faqs.html" class="text-gray-400 hover:text-white">FAQs</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submitBtn');
+            const successMsg = document.getElementById('successMsg');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            // Hide messages
+            successMsg.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+            
+            // Loading state
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+            btn.disabled = true;
+            
+            // Get form data
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            console.log('Sending:', data);
+            
+            try {
+                // Try fetch with timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
+                const response = await fetch('/api/contact.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                // Get raw text first
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+                
+                if (!responseText) {
+                    throw new Error('Empty response from server');
+                }
+                
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    // Not JSON - show raw error
+                    console.error('Not JSON:', responseText);
+                    throw new Error('Server error: ' + responseText.substring(0, 100));
+                }
+                
+                if (result.success) {
+                    successMsg.classList.remove('hidden');
+                    this.reset();
+                } else {
+                    document.getElementById('errorText').textContent = result.error || 'Failed to send message';
+                    errorMsg.classList.remove('hidden');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                
+                if (error.name === 'AbortError') {
+                    document.getElementById('errorText').textContent = 'Request timed out. Please try again.';
+                } else {
+                    document.getElementById('errorText').textContent = error.message;
+                }
+                errorMsg.classList.remove('hidden');
+                
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

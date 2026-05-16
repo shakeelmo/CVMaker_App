@@ -1,0 +1,15 @@
+{
+  "name": "cvmaker/app",
+  "description": "CV Maker web app with resume builder, admin dashboard, payments, email, and AI-assisted resume tools.",
+  "type": "project",
+  "require": {
+    "php": ">=8.0",
+    "phpmailer/phpmailer": "^7.0",
+    "phpoffice/phpword": "^1.4",
+    "smalot/pdfparser": "^2.12"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true
+  }
+}

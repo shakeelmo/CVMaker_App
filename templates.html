@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Resume Templates | Professional CV Templates | cvmaker.ink</title>
+  <meta name="description" content="Browse free professional resume templates and CV templates on cvmaker.ink. Choose clean, ATS-friendly layouts and start building your resume online.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Free Resume Templates | Professional CV Templates">
+  <meta property="og:description" content="Choose free, professional, ATS-friendly resume templates and build your CV online with CV Maker.">
+  <meta property="og:image" content="https://cvmaker.ink/assets/og-default.jpg">
+  <meta property="og:url" content="https://cvmaker.ink/templates.html">
+  <link rel="canonical" href="https://cvmaker.ink/templates.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Free Resume Templates",
+    "url": "https://cvmaker.ink/templates.html",
+    "description": "Free professional resume templates and CV templates for building ATS-friendly resumes online.",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "CV Maker",
+      "url": "https://cvmaker.ink/"
+    }
+  }
+  </script>
+    <!-- Tracking Code Loader -->
+    <script src="/assets/js/tracking-loader.js"></script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  </style>
+  <script src="/branding.js"></script>
+</head>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="bg-white/95 backdrop-blur-md shadow-sm sticky top-0 z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <a href="/" class="flex items-center space-x-2">
+          <img src="/uploads/branding/cvmaker-logo-20260515.svg" alt="cvmaker.ink" class="h-16 w-auto max-w-[320px] object-contain" />
+        </a>
+        
+        <div id="authButtons" class="flex items-center space-x-4">
+          <a href="/login.html" class="text-gray-600 hover:text-gray-900 font-medium">Sign In</a>
+          <a href="/builder.html?template=1" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition">Get Started</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Templates Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="text-center mb-12">
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">Free Resume Templates</h1>
+      <p class="text-xl text-blue-100 max-w-2xl mx-auto">Choose a professional, ATS-friendly CV template and start building your resume online.</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="text-center text-white py-12">
+      <i class="fas fa-spinner fa-spin text-4xl"></i>
+      <p class="mt-4">Loading templates...</p>
+    </div>
+
+    <!-- Templates Grid -->
+    <div id="templatesGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 hidden"></div>
+  </div>
+
+  <script>
+    // Check if user is logged in and Pro
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isPro = user.subscription_tier && user.subscription_tier !== 'free';
+    
+    if (token && user.first_name) {
+      document.getElementById('authButtons').innerHTML = `
+        <span class="text-gray-600">Welcome, ${user.first_name}</span>
+        <a href="/dashboard.html" class="text-blue-600 hover:text-blue-700 font-medium">Dashboard →</a>
+      `;
+    }
+    
+    // Load templates
+    async function loadTemplates() {
+      try {
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        
+        const response = await fetch('/api/templates', { headers });
+        const data = await response.json();
+        
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('templatesGrid').classList.remove('hidden');
+        
+        const colors = {
+          'modern': 'bg-gradient-to-br from-blue-500 to-blue-700',
+          'classic': 'bg-gradient-to-br from-gray-600 to-gray-800',
+          'minimal': 'bg-gradient-to-br from-green-500 to-green-700',
+          'creative': 'bg-gradient-to-br from-purple-500 to-purple-700',
+          'professional': 'bg-gradient-to-br from-amber-600 to-amber-800'
+        };
+        
+        document.getElementById('templatesGrid').innerHTML = data.templates.map(t => {
+          const isPremium = t.is_premium;
+          const buttonHtml = isPremium && !isPro
+            ? '<a href="/upgrade.html" class="block text-center bg-amber-500 text-white py-2.5 rounded-lg font-medium hover:bg-amber-600 transition"><i class="fas fa-crown mr-1"></i>Upgrade to Unlock</a>'
+            : '<a href="/builder.html?template=' + t.id + '" class="block text-center bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition">Use Template</a>';
+          
+          const hasThumbnail = t.thumbnail_url;
+          const imageHtml = hasThumbnail
+            ? `<img src="${t.thumbnail_url}" alt="${t.name}" class="w-full h-full object-contain">`
+            : `<div class="bg-white/90 p-6 rounded-lg shadow-lg w-3/4"><div class="h-3 bg-gray-300 rounded w-1/2 mb-2"></div><div class="h-2 bg-gray-200 rounded w-full mb-1"></div><div class="h-2 bg-gray-200 rounded w-4/5"></div></div>`;
+          
+          return `
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition ${isPremium ? 'ring-2 ring-amber-400' : ''}">
+              <div class="h-80 ${hasThumbnail ? '' : (colors[t.category] || colors['modern'])} flex items-center justify-center relative">
+                ${isPremium ? '<div class="absolute top-3 right-3 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow"><i class="fas fa-crown mr-1"></i>PRO</div>' : ''}
+                ${imageHtml}
+              </div>
+              <div class="p-6">
+                <div class="flex justify-between items-start mb-2">
+                  <h3 class="text-lg font-bold text-gray-900">${t.name}</h3>
+                  ${isPremium 
+                    ? '<span class="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full">Premium</span>' 
+                    : '<span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">Free</span>'}
+                </div>
+                <p class="text-gray-600 text-sm mb-4">${t.description}</p>
+                ${buttonHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        document.getElementById('loading').innerHTML = `
+          <div class="text-red-200">
+            <i class="fas fa-exclamation-triangle text-2xl"></i>
+            <p>Failed to load templates</p>
+          </div>
+        `;
+      }
+    }
+    
+    loadTemplates();
+  </script>
+</body>
+</html>

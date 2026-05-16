@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CVMaker.ink Preview - cvmaker.ink</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .resume-container {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      position: relative;
+      padding-bottom: 24mm;
+    }
+    .pdf-watermark {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 8mm;
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: lowercase;
+      color: rgba(107, 114, 128, 0.85);
+    }
+    @media print {
+      body { background: white; }
+      .no-print { display: none !important; }
+      .resume-container { box-shadow: none; margin: 0; width: 100%; }
+    }
+    
+    /* Template Styles */
+    .template-modern { }
+    .template-modern .header { text-align: center; border-bottom: 2px solid var(--primary); padding: 30px; }
+    .template-modern .name { font-size: 32px; font-weight: 700; color: var(--primary); }
+    .template-modern .title { font-size: 18px; color: #666; margin-top: 5px; }
+    .template-modern .contact { margin-top: 15px; font-size: 13px; color: #666; }
+    .template-modern .section { padding: 20px 30px; }
+    .template-modern .section-title { font-size: 14px; font-weight: 700; color: var(--primary); border-bottom: 1px solid var(--primary); padding-bottom: 8px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+    .template-modern .skills-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .template-modern .skill-tag { background: #f0f4ff; color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+    .template-modern .experience-item { margin-bottom: 20px; }
+    .template-modern .exp-header { display: flex; justify-content: space-between; font-weight: 600; }
+    .template-modern .exp-company { color: var(--primary); font-weight: 500; }
+    .template-modern .exp-date { color: #666; font-size: 12px; }
+    .template-modern .bullet { margin: 5px 0 5px 20px; font-size: 13px; line-height: 1.5; }
+
+    .template-classic .header { padding: 24px 30px 18px; border-bottom: 3px solid #111827; text-align: left; }
+    .template-classic .name { font-size: 30px; font-weight: 700; color: #111827; letter-spacing: 0.02em; }
+    .template-classic .title { font-size: 16px; color: #374151; margin-top: 6px; }
+    .template-classic .contact { margin-top: 12px; font-size: 12px; color: #4b5563; }
+    .template-classic .section { padding: 18px 30px; }
+    .template-classic .section-title { font-size: 13px; font-weight: 700; color: #111827; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.14em; }
+    .template-classic .skills-list { display: block; }
+    .template-classic .skill-tag { display: inline-block; margin: 0 10px 8px 0; font-size: 12px; color: #111827; background: #f3f4f6; padding: 4px 10px; border-radius: 4px; }
+    .template-classic .experience-item { margin-bottom: 18px; }
+    .template-classic .exp-header { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; color: #111827; }
+    .template-classic .exp-company { color: #374151; font-style: italic; margin-top: 2px; }
+    .template-classic .exp-date { color: #4b5563; font-size: 12px; white-space: nowrap; }
+    .template-classic .bullet { margin: 5px 0 5px 18px; font-size: 13px; line-height: 1.55; }
+
+    .template-minimal .header { padding: 26px 30px 14px; text-align: left; }
+    .template-minimal .name { font-size: 28px; font-weight: 300; color: #111827; }
+    .template-minimal .title { font-size: 15px; color: #6b7280; margin-top: 4px; }
+    .template-minimal .contact { margin-top: 10px; font-size: 12px; color: #6b7280; }
+    .template-minimal .section { padding: 14px 30px; }
+    .template-minimal .section-title { font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.18em; }
+    .template-minimal .skills-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .template-minimal .skill-tag { background: transparent; color: #111827; border: 1px solid #d1d5db; padding: 4px 10px; border-radius: 999px; font-size: 11px; }
+    .template-minimal .experience-item { margin-bottom: 16px; }
+    .template-minimal .exp-header { display: block; font-weight: 600; color: #111827; }
+    .template-minimal .exp-company { color: #6b7280; margin-top: 2px; }
+    .template-minimal .exp-date { color: #9ca3af; font-size: 12px; display: block; margin-top: 2px; }
+    .template-minimal .bullet { margin: 4px 0 4px 16px; font-size: 12.5px; line-height: 1.5; color: #374151; }
+
+    .template-creative .header { padding: 28px 30px 20px; background: linear-gradient(135deg, var(--primary), #111827); color: white; text-align: left; }
+    .template-creative .name { font-size: 31px; font-weight: 700; }
+    .template-creative .title { font-size: 16px; color: rgba(255,255,255,0.88); margin-top: 6px; }
+    .template-creative .contact { margin-top: 12px; font-size: 12px; color: rgba(255,255,255,0.85); }
+    .template-creative .section { padding: 18px 30px; }
+    .template-creative .section-title { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.14em; }
+    .template-creative .skills-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .template-creative .skill-tag { background: rgba(37,99,235,0.08); color: var(--primary); padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .template-creative .experience-item { margin-bottom: 18px; }
+    .template-creative .exp-header { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; }
+    .template-creative .exp-company { color: #6b7280; margin-top: 3px; }
+    .template-creative .exp-date { color: #6b7280; font-size: 12px; }
+    .template-creative .bullet { margin: 5px 0 5px 18px; font-size: 13px; line-height: 1.55; }
+
+    .template-executive .header { padding: 24px 30px; border-top: 6px solid #111827; text-align: left; }
+    .template-executive .name { font-size: 32px; font-weight: 700; color: #111827; }
+    .template-executive .title { font-size: 17px; color: #374151; margin-top: 6px; }
+    .template-executive .contact { margin-top: 12px; font-size: 12px; color: #4b5563; }
+    .template-executive .section { padding: 18px 30px; }
+    .template-executive .section-title { font-size: 13px; font-weight: 700; color: #111827; border-bottom: 2px solid #d1d5db; padding-bottom: 6px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.14em; }
+    .template-executive .skills-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .template-executive .skill-tag { background: #f9fafb; color: #111827; border: 1px solid #e5e7eb; padding: 4px 11px; border-radius: 4px; font-size: 11px; }
+    .template-executive .experience-item { margin-bottom: 18px; }
+    .template-executive .exp-header { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; color: #111827; }
+    .template-executive .exp-company { color: #374151; margin-top: 2px; }
+    .template-executive .exp-date { color: #6b7280; font-size: 12px; }
+    .template-executive .bullet { margin: 5px 0 5px 18px; font-size: 13px; line-height: 1.55; }
+
+    .template-glalie { display: grid; grid-template-columns: 30% 70%; min-height: 297mm; }
+    .template-glalie .sidebar { background: #d9e8e8; padding: 22px 18px; }
+    .template-glalie .main { padding: 22px 28px; }
+    .template-glalie .photo { width: 120px; height: 120px; border-radius: 8px; background: #cbd5e1; margin: 0 auto 16px; overflow: hidden; }
+    .template-glalie .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .template-glalie .name { font-size: 28px; font-weight: 700; color: #111827; text-align: center; }
+    .template-glalie .title { font-size: 14px; color: #374151; margin-top: 6px; text-align: center; }
+    .template-glalie .sidebar-card { border: 1px solid rgba(15,23,42,0.18); border-radius: 6px; padding: 10px 12px; margin: 16px 0; background: rgba(255,255,255,0.15); }
+    .template-glalie .sidebar-section { margin-top: 18px; }
+    .template-glalie .sidebar-title { font-size: 12px; font-weight: 700; color: #275b5b; text-transform: uppercase; border-bottom: 1px solid rgba(39,91,91,0.35); padding-bottom: 6px; margin-bottom: 10px; }
+    .template-glalie .sidebar-item { font-size: 12px; color: #1f2937; margin-bottom: 10px; line-height: 1.45; }
+    .template-glalie .main .section { padding: 0 0 18px; }
+    .template-glalie .section-title { font-size: 13px; font-weight: 700; color: #111827; text-transform: uppercase; border-bottom: 1px solid #374151; padding-bottom: 4px; margin-bottom: 10px; }
+    .template-glalie .experience-item { margin-bottom: 16px; }
+    .template-glalie .exp-header { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; color: #111827; }
+    .template-glalie .exp-company { color: #111827; margin-top: 2px; font-weight: 600; }
+    .template-glalie .exp-date { color: #374151; font-size: 12px; white-space: nowrap; }
+    .template-glalie .bullet { margin: 5px 0 5px 16px; font-size: 13px; line-height: 1.55; color: #374151; }
+    .template-glalie .plain-text { font-size: 13px; line-height: 1.6; color: #1f2937; }
+    
+    /* Gengar Template - Two column with dark sidebar */
+    .template-gengar { display: grid; grid-template-columns: 35% 65%; min-height: 297mm; }
+    .template-gengar .sidebar { background: #1e293b; color: #fff; padding: 28px 20px; }
+    .template-gengar .main { padding: 28px 28px; background: #fff; }
+    .template-gengar .photo { width: 100px; height: 100px; border-radius: 50%; background: #334155; margin: 0 auto 20px; overflow: hidden; border: 3px solid #475569; }
+    .template-gengar .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .template-gengar .sidebar .name { font-size: 22px; font-weight: 700; color: #fff; text-align: center; }
+    .template-gengar .sidebar .title { font-size: 13px; color: #94a3b8; margin-top: 6px; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
+    .template-gengar .sidebar .location { font-size: 12px; color: #64748b; margin-top: 4px; text-align: center; }
+    .template-gengar .sidebar-section { margin-top: 24px; }
+    .template-gengar .sidebar-title { font-size: 11px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #475569; padding-bottom: 8px; margin-bottom: 12px; }
+    .template-gengar .sidebar-item { font-size: 12px; color: #e2e8f0; margin-bottom: 10px; line-height: 1.5; }
+    .template-gengar .sidebar-item-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .template-gengar .skill-item { margin-bottom: 12px; }
+    .template-gengar .skill-name { font-size: 12px; color: #e2e8f0; margin-bottom: 4px; }
+    .template-gengar .skill-bar { height: 4px; background: #334155; border-radius: 2px; overflow: hidden; }
+    .template-gengar .skill-bar-fill { height: 100%; background: #60a5fa; border-radius: 2px; }
+    .template-gengar .social-links { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .template-gengar .social-link { font-size: 12px; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
+    .template-gengar .social-link i { width: 16px; color: #60a5fa; }
+    .template-gengar .main .header { padding: 0 0 20px; border-bottom: 2px solid #1e293b; margin-bottom: 20px; }
+    .template-gengar .main .name { font-size: 32px; font-weight: 700; color: #1e293b; }
+    .template-gengar .main .title { font-size: 16px; color: #475569; margin-top: 6px; }
+    .template-gengar .main .section { padding: 0 0 20px; }
+    .template-gengar .main .section-title { font-size: 14px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 14px; }
+    .template-gengar .experience-item { margin-bottom: 18px; }
+    .template-gengar .exp-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-weight: 700; color: #1e293b; font-size: 14px; }
+    .template-gengar .exp-company { color: #475569; margin-top: 4px; font-size: 13px; }
+    .template-gengar .exp-date { color: #64748b; font-size: 12px; white-space: nowrap; }
+    .template-gengar .bullet { margin: 6px 0 6px 16px; font-size: 13px; line-height: 1.55; color: #374151; }
+    .template-gengar .summary-text { font-size: 14px; line-height: 1.7; color: #374151; }
+    
+    /* Loading */
+    .loading { display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <!-- Controls -->
+  <div class="no-print fixed top-0 left-0 right-0 bg-white shadow-md z-50 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <a href="javascript:history.back()" class="text-gray-600 hover:text-gray-900">
+          <i class="fas fa-arrow-left"></i> Back
+        </a>
+        <h1 class="text-xl font-bold">CVMaker.ink Preview</h1>
+      </div>
+      <div class="flex gap-3">
+        <select id="templateSelect" onchange="changeTemplate()" class="px-4 py-2 border rounded-lg">
+          <option value="modern">Modern Professional</option>
+          <option value="classic">Classic Elegant</option>
+          <option value="minimal">Minimal Clean</option>
+          <option value="creative">Creative Bold</option>
+          <option value="executive">Executive Premium</option>
+          <option value="glalie">Glalie</option>
+          <option value="gengar">Gengar</option>
+        </select>
+        <button onclick="downloadPDF()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+          <i class="fas fa-download"></i> Download PDF
+        </button>
+        <button onclick="window.print()" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2">
+          <i class="fas fa-print"></i> Print
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading" class="loading">
+    <div class="text-center">
+      <div class="spinner mx-auto mb-4"></div>
+      <p class="text-gray-600">Loading resume...</p>
+    </div>
+  </div>
+
+  <!-- CVMaker.ink Preview -->
+  <div id="resumeContainer" class="hidden pt-24 pb-10 px-4">
+    <div id="resume" class="resume-container"></div>
+  </div>
+
+  <script>
+    let resumeData = null;
+    let currentTemplate = 'modern';
+    let currentUser = null;
+    let embedMode = false;
+    
+    // Load resume on page load
+    document.addEventListener('DOMContentLoaded', async function() {
+      const params = new URLSearchParams(window.location.search);
+      const resumeId = params.get('id') || params.get('resume');
+      embedMode = params.get('embed') === '1';
+      currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+
+      if (embedMode) {
+        document.body.classList.remove('bg-gray-100');
+        document.body.classList.add('bg-white');
+        document.querySelectorAll('.no-print').forEach(el => el.remove());
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('resumeContainer').classList.remove('hidden');
+        document.getElementById('resumeContainer').classList.remove('pt-24', 'pb-10', 'px-4');
+        window.addEventListener('message', handleEmbedMessage);
+        if (window.parent !== window) {
+          window.parent.postMessage({ type: 'preview-ready' }, '*');
+        }
+        return;
+      }
+      
+      if (!resumeId) {
+        alert('No resume ID provided');
+        return;
+      }
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/resumes/${resumeId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load');
+        
+        const data = await response.json();
+        if (data.resume) {
+          resumeData = typeof data.resume.content === 'string' 
+            ? JSON.parse(data.resume.content) 
+            : data.resume.content;
+          
+          currentTemplate = resumeData.template || 'modern';
+          document.getElementById('templateSelect').value = currentTemplate;
+          
+          renderResume();
+          
+          document.getElementById('loading').classList.add('hidden');
+          document.getElementById('resumeContainer').classList.remove('hidden');
+
+          if (params.get('download') === '1') {
+            setTimeout(() => downloadPDF(true), 600);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error loading resume');
+      }
+    });
+
+    function handleEmbedMessage(event) {
+      const message = event.data || {};
+      if (message.type !== 'resume-preview-data') return;
+      resumeData = message.resumeData || null;
+      currentTemplate = message.template || resumeData?.template || 'modern';
+      renderResume();
+    }
+    
+    function changeTemplate() {
+      currentTemplate = document.getElementById('templateSelect').value;
+      renderResume();
+    }
+    
+    function renderResume() {
+      if (!resumeData) return;
+      
+      const container = document.getElementById('resume');
+      const color = resumeData.settings?.color || '#2563eb';
+      
+      container.style = `--primary: ${color}; font-family: ${resumeData.settings?.font || 'Inter'};`;
+      container.className = `resume-container template-${currentTemplate}`;
+      
+      let html = '';
+
+      if (currentTemplate === 'glalie') {
+        const photoUrl = resumeData.basics?.profilePhoto || resumeData.basics?.photo || '';
+        html += `
+          <div class="sidebar">
+            <div class="photo">${photoUrl ? `<img src="${photoUrl}" alt="Profile photo">` : ''}</div>
+            ${resumeData.basics?.name ? `<div class="name">${resumeData.basics.name}</div>` : ''}
+            ${resumeData.basics?.headline ? `<div class="title">${resumeData.basics.headline}</div>` : ''}
+
+            <div class="sidebar-card">
+              ${resumeData.basics?.location ? `<div class="sidebar-item">📍 ${resumeData.basics.location}</div>` : ''}
+              ${resumeData.basics?.phone ? `<div class="sidebar-item">☎ ${resumeData.basics.phone}</div>` : ''}
+              ${resumeData.basics?.email ? `<div class="sidebar-item">✉ ${resumeData.basics.email}</div>` : ''}
+              ${resumeData.basics?.url ? `<div class="sidebar-item">🔗 ${resumeData.basics.url}</div>` : ''}
+              ${resumeData.basics?.dateOfBirth ? `<div class="sidebar-item">🎂 ${resumeData.basics.dateOfBirth}</div>` : ''}
+              ${resumeData.basics?.nationality ? `<div class="sidebar-item">🌍 ${resumeData.basics.nationality}</div>` : ''}
+            </div>
+
+            ${resumeData.basics?.linkedIn ? `<div class="sidebar-section"><div class="sidebar-title">Profiles</div><div class="sidebar-item">LinkedIn<br>${resumeData.basics.linkedIn}</div></div>` : ''}
+
+            ${resumeData.skills?.length ? `<div class="sidebar-section"><div class="sidebar-title">Skills</div>${resumeData.skills.slice(0, 8).map(s => `<div class="sidebar-item"><strong>${s.name}</strong><br>${(s.proficiency || '').replace(/^./, c => c.toUpperCase())}</div>`).join('')}</div>` : ''}
+
+            ${resumeData.certifications?.length ? `<div class="sidebar-section"><div class="sidebar-title">Certifications</div>${resumeData.certifications.map(cert => `<div class="sidebar-item"><strong>${cert.name}</strong>${cert.issuer ? `<br>${cert.issuer}` : ''}${cert.date ? `<br>${cert.date}` : ''}</div>`).join('')}</div>` : ''}
+          </div>
+          <div class="main">
+            ${resumeData.summary ? `<div class="section"><div class="section-title">Summary</div><div class="plain-text">${resumeData.summary}</div></div>` : ''}
+            ${resumeData.experience?.length ? `<div class="section"><div class="section-title">Experience</div>${resumeData.experience.map(exp => `<div class="experience-item"><div class="exp-header"><span>${exp.company || ''}</span><span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' to ')}</span></div><div class="exp-company">${exp.position || ''}${exp.location ? `, ${exp.location}` : ''}</div>${exp.url ? `<div class="plain-text">${exp.url}</div>` : ''}${exp.bullets?.filter(b => b).map(b => `<div class="bullet">• ${b}</div>`).join('') || ''}</div>`).join('')}</div>` : ''}
+            ${resumeData.education?.length ? `<div class="section"><div class="section-title">Education</div>${resumeData.education.map(edu => `<div class="experience-item"><div class="exp-header"><span>${edu.school || ''}</span><span class="exp-date">${edu.graduationDate || ''}</span></div><div class="exp-company">${edu.degree || ''}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
+            ${resumeData.projects?.length ? `<div class="section"><div class="section-title">Projects</div>${resumeData.projects.map(project => `<div class="experience-item"><div class="exp-company">${project.name || ''}</div><div class="plain-text">${project.role || ''}</div><div class="plain-text">${project.description || ''}</div></div>`).join('')}</div>` : ''}
+          </div>
+        `;
+
+        if (!embedMode && (currentUser?.subscription_tier || 'free') === 'free') {
+          html += '<div class="pdf-watermark">cvmaker.ink</div>';
+        }
+
+        container.innerHTML = html;
+        return;
+      }
+      
+      if (currentTemplate === 'gengar') {
+        const photoUrl = resumeData.basics?.profilePhoto || resumeData.basics?.photo || '';
+        
+        // Skill level mapping
+        const skillLevels = { beginner: 25, intermediate: 50, advanced: 75, expert: 100 };
+        
+        html += `
+          <div class="sidebar">
+            <div class="photo">${photoUrl ? `<img src="${photoUrl}" alt="Profile photo">` : ''}</div>
+            
+            ${resumeData.basics?.name ? `<div class="name">${resumeData.basics.name}</div>` : ''}
+            ${resumeData.basics?.headline ? `<div class="title">${resumeData.basics.headline}</div>` : ''}
+            ${resumeData.basics?.location ? `<div class="location">📍 ${resumeData.basics.location}</div>` : ''}
+
+            <div class="sidebar-section">
+              <div class="sidebar-title">Contact</div>
+              ${resumeData.basics?.email ? `<div class="sidebar-item"><div class="sidebar-item-label">Email</div>${resumeData.basics.email}</div>` : ''}
+              ${resumeData.basics?.phone ? `<div class="sidebar-item"><div class="sidebar-item-label">Phone</div>${resumeData.basics.phone}</div>` : ''}
+              ${resumeData.basics?.url ? `<div class="sidebar-item"><div class="sidebar-item-label">Website</div>${resumeData.basics.url}</div>` : ''}
+            </div>
+
+            ${(resumeData.basics?.linkedIn || resumeData.basics?.github) ? `
+              <div class="sidebar-section">
+                <div class="sidebar-title">Profiles</div>
+                <div class="social-links">
+                  ${resumeData.basics?.linkedIn ? `<div class="social-link"><i class="fab fa-linkedin"></i> LinkedIn</div>` : ''}
+                  ${resumeData.basics?.github ? `<div class="social-link"><i class="fab fa-github"></i> GitHub</div>` : ''}
+                </div>
+              </div>
+            ` : ''}
+
+            ${resumeData.skills?.length ? `
+              <div class="sidebar-section">
+                <div class="sidebar-title">Technical Skills</div>
+                ${resumeData.skills.slice(0, 8).map(s => {
+                  const level = skillLevels[s.proficiency?.toLowerCase()] || 50;
+                  return `<div class="skill-item"><div class="skill-name">${s.name}</div><div class="skill-bar"><div class="skill-bar-fill" style="width: ${level}%"></div></div></div>`;
+                }).join('')}
+              </div>
+            ` : ''}
+
+            ${resumeData.languages?.length ? `
+              <div class="sidebar-section">
+                <div class="sidebar-title">Languages</div>
+                ${resumeData.languages.map(lang => `<div class="sidebar-item"><strong>${lang.name}</strong> - ${lang.proficiency}</div>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+          
+          <div class="main">
+            <div class="header">
+              ${resumeData.basics?.name ? `<div class="name">${resumeData.basics.name}</div>` : ''}
+              ${resumeData.basics?.headline ? `<div class="title">${resumeData.basics.headline}</div>` : ''}
+            </div>
+            
+            ${resumeData.summary ? `<div class="section"><div class="section-title">Professional Summary</div><div class="summary-text">${resumeData.summary}</div></div>` : ''}
+            
+            ${resumeData.experience?.length ? `<div class="section"><div class="section-title">Experience</div>${resumeData.experience.map(exp => `<div class="experience-item"><div class="exp-header"><span>${exp.position}</span><span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' - ')}</span></div><div class="exp-company">${exp.company}${exp.location ? `, ${exp.location}` : ''}</div>${exp.bullets?.filter(b => b).map(b => `<div class="bullet">• ${b}</div>`).join('') || ''}</div>`).join('')}</div>` : ''}
+            
+            ${resumeData.education?.length ? `<div class="section"><div class="section-title">Education</div>${resumeData.education.map(edu => `<div class="experience-item"><div class="exp-header"><span>${edu.school}</span><span class="exp-date">${edu.graduationDate}</span></div><div class="exp-company">${edu.degree}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
+            
+            ${resumeData.certifications?.length ? `<div class="section"><div class="section-title">Certifications</div>${resumeData.certifications.map(cert => `<div class="experience-item"><div class="exp-header"><span>${cert.name}</span><span class="exp-date">${cert.date}</span></div><div class="exp-company">${cert.issuer}</div></div>`).join('')}</div>` : ''}
+          </div>
+        `;
+
+        if (!embedMode && (currentUser?.subscription_tier || 'free') === 'free') {
+          html += '<div class="pdf-watermark">cvmaker.ink</div>';
+        }
+
+        container.innerHTML = html;
+        return;
+      }
+      
+      // Header
+      html += `
+        <div class="header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px;">
+          <div style="flex:1;">
+            ${resumeData.basics?.name ? `<div class="name">${resumeData.basics.name}</div>` : ''}
+            ${resumeData.basics?.headline ? `<div class="title">${resumeData.basics.headline}</div>` : ''}
+            <div class="contact">
+              ${[
+                resumeData.basics?.email,
+                resumeData.basics?.phone,
+                resumeData.basics?.location,
+                resumeData.basics?.linkedIn ? 'LinkedIn' : ''
+              ].filter(Boolean).join(' | ')}
+            </div>
+            ${(resumeData.basics?.dateOfBirth || resumeData.basics?.nationality) ? `
+              <div class="contact" style="margin-top:8px;">
+                ${[
+                  resumeData.basics?.dateOfBirth ? `Date of Birth: ${resumeData.basics.dateOfBirth}` : '',
+                  resumeData.basics?.nationality ? `Nationality: ${resumeData.basics.nationality}` : ''
+                ].filter(Boolean).join(' | ')}
+              </div>
+            ` : ''}
+          </div>
+          ${resumeData.basics?.profilePhoto ? `<div style="width:96px; height:96px; border-radius:12px; overflow:hidden; flex-shrink:0; border:1px solid rgba(0,0,0,0.08);"><img src="${resumeData.basics.profilePhoto}" alt="Profile photo" style="width:100%; height:100%; object-fit:cover; display:block;"></div>` : ''}
+        </div>
+      `;
+      
+      // Summary
+      if (resumeData.summary) {
+        html += `
+          <div class="section">
+            <div class="section-title">Professional Summary</div>
+            <p>${resumeData.summary}</p>
+          </div>
+        `;
+      }
+      
+      // Skills
+      if (resumeData.skills?.length) {
+        html += `
+          <div class="section">
+            <div class="section-title">Skills</div>
+            <div class="skills-list">
+              ${resumeData.skills.map(s => `
+                <span class="skill-tag">${s.name}</span>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+      
+      // Experience
+      if (resumeData.experience?.length) {
+        html += `
+          <div class="section">
+            <div class="section-title">Work Experience</div>
+            ${resumeData.experience.map(exp => `
+              <div class="experience-item">
+                <div class="exp-header">
+                  <span>${exp.position}</span>
+                  <span class="exp-date">${exp.startDate} - ${exp.endDate || 'Present'}</span>
+                </div>
+                <div class="exp-company">${exp.company}${exp.location ? `, ${exp.location}` : ''}</div>
+                ${exp.bullets?.filter(b => b).map(b => `
+                  <div class="bullet">• ${b}</div>
+                `).join('') || ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      
+      // Education
+      if (resumeData.education?.length) {
+        html += `
+          <div class="section">
+            <div class="section-title">Education</div>
+            ${resumeData.education.map(edu => `
+              <div class="experience-item">
+                <div class="exp-header">
+                  <span>${edu.school}</span>
+                  <span class="exp-date">${edu.graduationDate}</span>
+                </div>
+                <div>${edu.degree}${edu.field ? `, ${edu.field}` : ''}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      
+      // Certifications
+      if (resumeData.certifications?.length) {
+        html += `
+          <div class="section">
+            <div class="section-title">Certifications</div>
+            ${resumeData.certifications.map(cert => {
+              const meta = [cert.issuer, cert.date].filter(Boolean).join(' • ');
+              return `
+                <div class="bullet">
+                  <strong>${cert.name}</strong>${meta ? ` - ${meta}` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+      
+      // Languages
+      if (resumeData.languages?.length) {
+        html += `
+          <div class="section">
+            <div class="section-title">Languages</div>
+            <div class="skills-list">
+              ${resumeData.languages.map(l => `
+                <span class="skill-tag">${l.name} (${l.proficiency})</span>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+      
+      if (!embedMode && (currentUser?.subscription_tier || 'free') === 'free') {
+        html += '<div class="pdf-watermark">cvmaker.ink</div>';
+      }
+
+      container.innerHTML = html;
+    }
+    
+    function downloadPDF(autoTriggered = false) {
+      const element = document.getElementById('resume');
+      const opt = {
+        margin: 0,
+        filename: `resume_${new Date().getTime()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      const btn = document.querySelector('button[onclick="downloadPDF()"]');
+      const originalText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+        btn.disabled = true;
+      }
+
+      let finished = false;
+      const timeoutId = setTimeout(() => {
+        if (finished) return;
+        finished = true;
+        if (btn) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
+        alert('PDF generation is taking too long. Please use Print → Save as PDF instead.');
+      }, 20000);
+      
+      html2pdf().set(opt).from(element).save().then(() => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeoutId);
+        if (btn) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
+        if (autoTriggered) {
+          setTimeout(() => window.close(), 800);
+        }
+      }).catch(err => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeoutId);
+        console.error(err);
+        alert('Error generating PDF. Please try Print → Save as PDF instead.');
+        if (btn) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
+      });
+    }
+  </script>
+</body>
+</html>
