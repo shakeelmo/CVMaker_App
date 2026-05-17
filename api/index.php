@@ -32,6 +32,12 @@ if ($path === 'admin.php') {
     exit;
 }
 
+// Route direct contact API requests when OpenLiteSpeed rewrites them through this router.
+if ($path === 'contact' || $path === 'contact.php') {
+    require __DIR__ . '/contact.php';
+    exit;
+}
+
 // Parse JSON input
 $input = json_decode(file_get_contents('php://input'), true) ?? [];
 

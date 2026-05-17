@@ -24,6 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+const SMTP_CONNECT_TIMEOUT_SECONDS = 5;
+
 function smtpExpect($socket, $codes) {
     $response = '';
     while ($line = fgets($socket, 515)) {
@@ -82,10 +84,11 @@ function sendSmtpMail($toEmail, $toName, $subject, $htmlBody, $textBody = '') {
     // SSL (port 465) - direct TLS connection
     if (strtolower($smtpEncryption) === 'ssl' || $smtpPort == 465) {
         $context = stream_context_create(['ssl' => ['verify_peer' => false, 'verify_peer_name' => false]]);
-        $socket = stream_socket_client("ssl://{$smtpHost}:{$smtpPort}", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
+        $socket = stream_socket_client("ssl://{$smtpHost}:{$smtpPort}", $errno, $errstr, SMTP_CONNECT_TIMEOUT_SECONDS, STREAM_CLIENT_CONNECT, $context);
         if (!$socket) {
             throw new Exception("SMTP connection failed: {$errstr} ({$errno})");
         }
+        stream_set_timeout($socket, SMTP_CONNECT_TIMEOUT_SECONDS);
         try {
             smtpExpect($socket, [220]);
             smtpCommand($socket, 'EHLO cvmaker.ink', [250]);
@@ -107,10 +110,11 @@ function sendSmtpMail($toEmail, $toName, $subject, $htmlBody, $textBody = '') {
     }
 
     // TLS (port 587) - STARTTLS
-    $socket = stream_socket_client("tcp://{$smtpHost}:{$smtpPort}", $errno, $errstr, 30, STREAM_CLIENT_CONNECT);
+    $socket = stream_socket_client("tcp://{$smtpHost}:{$smtpPort}", $errno, $errstr, SMTP_CONNECT_TIMEOUT_SECONDS, STREAM_CLIENT_CONNECT);
     if (!$socket) {
         throw new Exception("SMTP connection failed: {$errstr} ({$errno})");
     }
+    stream_set_timeout($socket, SMTP_CONNECT_TIMEOUT_SECONDS);
 
     try {
         smtpExpect($socket, [220]);
@@ -197,7 +201,12 @@ try {
 
     $textBody = "New Contact Form Submission\n\nSubmission ID: {$submissionId}\nName: {$name}\nEmail: {$email}\nSubject: {$subject}\n\nMessage:\n{$message}";
 
-    $mailSent = sendSmtpMail('support@cvmaker.ink', 'Customer Support', "[cvmaker.ink Contact Form] {$subject}", $htmlBody, $textBody);
+    $mailSent = false;
+    try {
+        $mailSent = sendSmtpMail('support@cvmaker.ink', 'Customer Support', "[cvmaker.ink Contact Form] {$subject}", $htmlBody, $textBody);
+    } catch (Throwable $mailError) {
+        error_log('Contact notification email failed for submission #' . $submissionId . ': ' . $mailError->getMessage());
+    }
 
     echo json_encode([
         'success' => true,
