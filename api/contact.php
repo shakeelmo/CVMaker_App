@@ -203,7 +203,8 @@ try {
 
     $mailSent = false;
     try {
-        $mailSent = sendSmtpMail('support@cvmaker.ink', 'Customer Support', "[cvmaker.ink Contact Form] {$subject}", $htmlBody, $textBody);
+        $recipientEmail = getSetting($pdo, 'contact_email', getSetting($pdo, 'smtp_from_email', 'support@cvmaker.ink'));
+        $mailSent = sendSmtpMail($recipientEmail, 'Customer Support', "[cvmaker.ink Contact Form] {$subject}", $htmlBody, $textBody);
     } catch (Throwable $mailError) {
         error_log('Contact notification email failed for submission #' . $submissionId . ': ' . $mailError->getMessage());
     }
