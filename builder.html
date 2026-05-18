@@ -107,6 +107,16 @@
     .completion-dot.filled{background:#22c55e}
     .completion-dot.empty-dot{background:#d1d5db}
 
+    /* Section manager */
+    .section-manager-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.75rem;padding:.75rem;border:1px solid #e5e7eb;border-radius:.75rem;background:#fff}
+    .section-manager-row.is-hidden{background:#f9fafb;color:#9ca3af}
+    .section-manager-icon{width:2rem;height:2rem;border-radius:.5rem;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center}
+    .section-manager-actions{display:flex;align-items:center;gap:.375rem}
+    .icon-btn{width:2rem;height:2rem;border:1px solid #dbe3ef;border-radius:.5rem;background:#fff;color:#4b5563;display:inline-flex;align-items:center;justify-content:center}
+    .icon-btn:hover{background:#f3f4f6;color:#111827}
+    .icon-btn:disabled{opacity:.35;cursor:not-allowed}
+    .section-switch{display:inline-flex;align-items:center;gap:.375rem;font-size:.8125rem;color:#4b5563}
+
     /* ── Section Tips ── */
     .section-tip{display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:.5rem;padding:.5rem .75rem;margin-bottom:.75rem;font-size:.8125rem;color:#1e40af;line-height:1.5}
     .section-tip.tip-visible{display:flex;align-items:flex-start;gap:.375rem;animation:tipFadeIn .25s ease-out}
@@ -666,8 +676,21 @@
                 <option value="skills-first">Skills First (Recommended for ATS)</option>
                 <option value="experience-first">Experience First</option>
                 <option value="education-first">Education First</option>
+                <option value="custom">Custom Order</option>
               </select>
             </div>
+          </div>
+          <div class="mt-5">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <h3 class="font-semibold text-gray-900">Rearrange Sections</h3>
+                <p class="text-sm text-gray-500">Move sections up or down and choose which optional sections appear in the final CV.</p>
+              </div>
+              <button type="button" onclick="resetSectionOrder()" class="btn-secondary text-sm">
+                <i class="fas fa-rotate-left"></i> Reset
+              </button>
+            </div>
+            <div id="sectionManagerList" class="space-y-2"></div>
           </div>
         </div>
       </div>
@@ -821,12 +844,21 @@
       projects: [],
       languages: [],
       template: 'modern',
-      settings: { font: 'Inter', format: 'a4', color: '#2563eb', sectionOrder: 'skills-first' }
+      settings: {
+        font: 'Inter',
+        format: 'a4',
+        color: '#2563eb',
+        sectionOrder: 'skills-first',
+        sectionOrderList: ['summary', 'skills', 'experience', 'education', 'certifications', 'projects', 'languages'],
+        hiddenSections: []
+      }
     };
 
     let atsScore = { total: 0, keywords: 0, format: 0, content: 0 };
     let previewFrameReady = false;
     let availableTemplates = [];
+    let itemIdCounter = Date.now();
+    let suppressAutoSave = true;
     const templateVariantMap = {
       'modern-professional': 'modern',
       'classic-elegant': 'classic',
@@ -836,6 +868,56 @@
       'glalie': 'glalie',
       'gengar': 'gengar'
     };
+    const RESUME_SECTION_DEFS = [
+      { key: 'summary', label: 'Professional Summary', icon: 'fa-align-left' },
+      { key: 'skills', label: 'Skills', icon: 'fa-tools' },
+      { key: 'experience', label: 'Work Experience', icon: 'fa-briefcase' },
+      { key: 'education', label: 'Education', icon: 'fa-graduation-cap' },
+      { key: 'certifications', label: 'Certifications', icon: 'fa-certificate' },
+      { key: 'projects', label: 'Projects', icon: 'fa-project-diagram' },
+      { key: 'languages', label: 'Languages', icon: 'fa-language' }
+    ];
+
+    function createEditorId() {
+      itemIdCounter += 1;
+      return itemIdCounter;
+    }
+
+    function ensureEditorId(item) {
+      const existing = Number(item?.id);
+      if (Number.isFinite(existing) && existing > 0) {
+        itemIdCounter = Math.max(itemIdCounter, existing);
+        return existing;
+      }
+      return createEditorId();
+    }
+
+    function getPresetSectionOrder(preset = 'skills-first') {
+      if (preset === 'experience-first') {
+        return ['summary', 'experience', 'skills', 'projects', 'certifications', 'education', 'languages'];
+      }
+      if (preset === 'education-first') {
+        return ['summary', 'education', 'skills', 'experience', 'projects', 'certifications', 'languages'];
+      }
+      return ['summary', 'skills', 'experience', 'projects', 'certifications', 'education', 'languages'];
+    }
+
+    function normalizeSectionSettings() {
+      resumeData.settings = resumeData.settings || {};
+      const validKeys = RESUME_SECTION_DEFS.map(s => s.key);
+      let order = Array.isArray(resumeData.settings.sectionOrderList)
+        ? resumeData.settings.sectionOrderList.filter(key => validKeys.includes(key))
+        : getPresetSectionOrder(resumeData.settings.sectionOrder);
+
+      validKeys.forEach(key => {
+        if (!order.includes(key)) order.push(key);
+      });
+
+      resumeData.settings.sectionOrderList = order;
+      resumeData.settings.hiddenSections = Array.isArray(resumeData.settings.hiddenSections)
+        ? resumeData.settings.hiddenSections.filter(key => validKeys.includes(key))
+        : [];
+    }
 
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
@@ -862,9 +944,13 @@
       });
 
       loadTemplates();
-      loadResumeData();
-      updateATSScore();
-      setMobileBuilderView('edit');
+      loadResumeData().finally(() => {
+        normalizeSectionSettings();
+        renderSectionManager();
+        updateATSScore();
+        suppressAutoSave = false;
+        setMobileBuilderView('edit');
+      });
     });
 
     function setMobileBuilderView(view) {
@@ -909,10 +995,88 @@
       if (templateFont) resumeData.settings.font = templateFont.value || 'Inter';
       if (pageFormat) resumeData.settings.format = pageFormat.value || 'a4';
       if (primaryColor) resumeData.settings.color = primaryColor.value || '#2563eb';
-      if (sectionOrder) resumeData.settings.sectionOrder = sectionOrder.value || 'skills-first';
+      if (sectionOrder) {
+        resumeData.settings.sectionOrder = sectionOrder.value || 'skills-first';
+        if (sectionOrder.value !== 'custom') {
+          resumeData.settings.sectionOrderList = getPresetSectionOrder(sectionOrder.value);
+        }
+      }
+      normalizeSectionSettings();
+      renderSectionManager();
 
       updateATSScore();
       pushLivePreview();
+    }
+
+    function renderSectionManager() {
+      const list = document.getElementById('sectionManagerList');
+      if (!list) return;
+      normalizeSectionSettings();
+      const hidden = new Set(resumeData.settings.hiddenSections || []);
+      const order = resumeData.settings.sectionOrderList || [];
+      const defByKey = Object.fromEntries(RESUME_SECTION_DEFS.map(def => [def.key, def]));
+
+      list.innerHTML = order.map((key, index) => {
+        const def = defByKey[key];
+        if (!def) return '';
+        const isHidden = hidden.has(key);
+        return `
+          <div class="section-manager-row ${isHidden ? 'is-hidden' : ''}">
+            <div class="section-manager-icon"><i class="fas ${def.icon}"></i></div>
+            <div>
+              <div class="font-medium">${def.label}</div>
+              <label class="section-switch">
+                <input type="checkbox" ${isHidden ? '' : 'checked'} onchange="toggleResumeSection('${key}', this.checked)">
+                Show in CV
+              </label>
+            </div>
+            <div class="section-manager-actions">
+              <button type="button" class="icon-btn" onclick="moveResumeSection('${key}', -1)" ${index === 0 ? 'disabled' : ''} title="Move up">
+                <i class="fas fa-arrow-up"></i>
+              </button>
+              <button type="button" class="icon-btn" onclick="moveResumeSection('${key}', 1)" ${index === order.length - 1 ? 'disabled' : ''} title="Move down">
+                <i class="fas fa-arrow-down"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function moveResumeSection(key, direction) {
+      normalizeSectionSettings();
+      const order = resumeData.settings.sectionOrderList;
+      const index = order.indexOf(key);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= order.length) return;
+      [order[index], order[nextIndex]] = [order[nextIndex], order[index]];
+      resumeData.settings.sectionOrder = 'custom';
+      const select = document.getElementById('sectionOrder');
+      if (select) select.value = 'custom';
+      renderSectionManager();
+      updateATSScore();
+    }
+
+    function toggleResumeSection(key, shouldShow) {
+      normalizeSectionSettings();
+      const hidden = new Set(resumeData.settings.hiddenSections || []);
+      if (shouldShow) hidden.delete(key);
+      else hidden.add(key);
+      resumeData.settings.hiddenSections = Array.from(hidden);
+      renderSectionManager();
+      updateATSScore();
+    }
+
+    function resetSectionOrder() {
+      resumeData.settings = resumeData.settings || {};
+      const preset = document.getElementById('sectionOrder')?.value || 'skills-first';
+      resumeData.settings.sectionOrder = preset === 'custom' ? 'skills-first' : preset;
+      resumeData.settings.sectionOrderList = getPresetSectionOrder(resumeData.settings.sectionOrder);
+      resumeData.settings.hiddenSections = [];
+      const select = document.getElementById('sectionOrder');
+      if (select) select.value = resumeData.settings.sectionOrder;
+      renderSectionManager();
+      updateATSScore();
     }
 
     async function loadTemplates() {
@@ -1019,7 +1183,7 @@
       
       if (!name) return;
       
-      const id = Date.now();
+      const id = createEditorId();
       resumeData.skills.push({ id, name, proficiency });
       
       document.getElementById('skillInput').value = '';
@@ -1034,6 +1198,13 @@
     }
 
     function renderSkills() {
+      resumeData.skills = (resumeData.skills || []).map(skill => {
+        if (typeof skill === 'string') {
+          skill = { id: createEditorId(), name: skill, proficiency: 'intermediate' };
+        }
+        skill.id = ensureEditorId(skill);
+        return skill;
+      });
       const colors = {
         beginner: 'bg-gray-100 text-gray-700',
         intermediate: 'bg-blue-100 text-blue-700',
@@ -1042,8 +1213,8 @@
       };
       
       const html = resumeData.skills.map(skill => `
-        <span class="skill-badge ${colors[skill.proficiency]}">
-          ${skill.name}
+        <span class="skill-badge ${colors[skill.proficiency] || colors.intermediate}">
+          ${escapeHtml(skill.name)}
           <button onclick="removeSkill(${skill.id})" class="ml-2 text-current opacity-60 hover:opacity-100">&times;</button>
         </span>
       `).join('');
@@ -1054,12 +1225,24 @@
 
     // Experience Management
     function addExperience(data = null) {
-      const id = Date.now();
-      const exp = data || { 
+      const exp = data || {
+        id: createEditorId(),
+        company: '',
+        position: '',
+        location: '',
+        startDate: '',
+        endDate: '',
+        current: false,
+        bullets: ['', '', '']
+      };
+      const id = ensureEditorId(exp);
+      exp.id = id;
+      exp.bullets = Array.isArray(exp.bullets) && exp.bullets.length ? exp.bullets : ['', '', ''];
+      Object.assign(exp, {
         id, company: '', position: '', location: '', 
         startDate: '', endDate: '', current: false,
         bullets: ['', '', ''] 
-      };
+      }, exp);
       
       const html = `
         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50" id="exp-${id}">
@@ -1068,12 +1251,12 @@
             <button onclick="removeExperience(${id})" class="btn-danger">Remove</button>
           </div>
           <div class="grid md:grid-cols-2 gap-3">
-            <input type="text" class="field-input" placeholder="Company Name" value="${exp.company}" onchange="updateExperience(${id}, 'company', this.value)">
-            <input type="text" class="field-input" placeholder="Job Title" value="${exp.position}" onchange="updateExperience(${id}, 'position', this.value)">
-            <input type="text" class="field-input" placeholder="Location" value="${exp.location}" onchange="updateExperience(${id}, 'location', this.value)">
+            <input type="text" class="field-input" placeholder="Company Name" value="${escapeHtml(exp.company)}" oninput="updateExperience(${id}, 'company', this.value)">
+            <input type="text" class="field-input" placeholder="Job Title" value="${escapeHtml(exp.position)}" oninput="updateExperience(${id}, 'position', this.value)">
+            <input type="text" class="field-input" placeholder="Location" value="${escapeHtml(exp.location)}" oninput="updateExperience(${id}, 'location', this.value)">
             <div class="flex gap-2">
-              <input type="text" class="field-input flex-1" placeholder="Start Date (MM/YYYY)" value="${exp.startDate}" onchange="updateExperience(${id}, 'startDate', this.value)">
-              <input type="text" class="field-input flex-1" placeholder="End Date" value="${exp.endDate}" onchange="updateExperience(${id}, 'endDate', this.value)" ${exp.current ? 'disabled' : ''}>
+              <input type="text" class="field-input flex-1" placeholder="Start Date (MM/YYYY)" value="${escapeHtml(exp.startDate)}" oninput="updateExperience(${id}, 'startDate', this.value)">
+              <input type="text" class="field-input flex-1" placeholder="End Date" value="${escapeHtml(exp.endDate)}" oninput="updateExperience(${id}, 'endDate', this.value)" ${exp.current ? 'disabled' : ''}>
             </div>
             <label class="flex items-center gap-2 md:col-span-2">
               <input type="checkbox" ${exp.current ? 'checked' : ''} onchange="toggleCurrentJob(${id}, this.checked)">
@@ -1084,7 +1267,7 @@
               ${exp.bullets.map((bullet, i) => `
                 <div class="flex gap-2 mb-2">
                   <span class="text-gray-400 mt-2">•</span>
-                  <input type="text" class="field-input flex-1" placeholder="Achievement with metrics (e.g., Increased sales by 25%)" value="${bullet}" onchange="updateBullet(${id}, ${i}, this.value)">
+                  <input type="text" class="field-input flex-1" placeholder="Achievement with metrics (e.g., Increased sales by 25%)" value="${escapeHtml(bullet)}" oninput="updateBullet(${id}, ${i}, this.value)">
                 </div>
               `).join('')}
               <button onclick="addBullet(${id})" class="text-blue-600 text-sm mt-2 hover:underline">
@@ -1122,6 +1305,7 @@
         const el = document.getElementById(`exp-${expId}`);
         el.remove();
         addExperience(item);
+        updateATSScore();
       }
     }
 
@@ -1130,6 +1314,7 @@
       if (item) {
         item.current = isCurrent;
         if (isCurrent) item.endDate = 'Present';
+        updateATSScore();
       }
     }
 
@@ -1141,8 +1326,9 @@
 
     // Education Management
     function addEducation(data = null) {
-      const id = Date.now();
-      const edu = data || { id, school: '', degree: '', field: '', graduationDate: '', gpa: '' };
+      const edu = data || { id: createEditorId(), school: '', degree: '', field: '', graduationDate: '', gpa: '' };
+      const id = ensureEditorId(edu);
+      Object.assign(edu, { id, school: '', degree: '', field: '', graduationDate: '', gpa: '' }, edu);
       
       const html = `
         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50" id="edu-${id}">
@@ -1151,11 +1337,11 @@
             <button onclick="removeEducation(${id})" class="btn-danger">Remove</button>
           </div>
           <div class="grid md:grid-cols-2 gap-3">
-            <input type="text" class="field-input" placeholder="School/University" value="${edu.school}" onchange="updateEducation(${id}, 'school', this.value)">
-            <input type="text" class="field-input" placeholder="Degree (e.g., Bachelor of Science)" value="${edu.degree}" onchange="updateEducation(${id}, 'degree', this.value)">
-            <input type="text" class="field-input" placeholder="Field of Study" value="${edu.field}" onchange="updateEducation(${id}, 'field', this.value)">
-            <input type="text" class="field-input" placeholder="Graduation Date (YYYY)" value="${edu.graduationDate}" onchange="updateEducation(${id}, 'graduationDate', this.value)">
-            <input type="text" class="field-input" placeholder="GPA (optional)" value="${edu.gpa}" onchange="updateEducation(${id}, 'gpa', this.value)">
+            <input type="text" class="field-input" placeholder="School/University" value="${escapeHtml(edu.school)}" oninput="updateEducation(${id}, 'school', this.value)">
+            <input type="text" class="field-input" placeholder="Degree (e.g., Bachelor of Science)" value="${escapeHtml(edu.degree)}" oninput="updateEducation(${id}, 'degree', this.value)">
+            <input type="text" class="field-input" placeholder="Field of Study" value="${escapeHtml(edu.field)}" oninput="updateEducation(${id}, 'field', this.value)">
+            <input type="text" class="field-input" placeholder="Graduation Date (YYYY)" value="${escapeHtml(edu.graduationDate)}" oninput="updateEducation(${id}, 'graduationDate', this.value)">
+            <input type="text" class="field-input" placeholder="GPA (optional)" value="${escapeHtml(edu.gpa)}" oninput="updateEducation(${id}, 'gpa', this.value)">
           </div>
         </div>
       `;
@@ -1181,8 +1367,9 @@
 
     // Certification Management
     function addCertification(data = null) {
-      const id = Date.now();
-      const cert = data || { id, name: '', issuer: '', date: '', expiration: '' };
+      const cert = data || { id: createEditorId(), name: '', issuer: '', date: '', expiration: '' };
+      const id = ensureEditorId(cert);
+      Object.assign(cert, { id, name: '', issuer: '', date: '', expiration: '' }, cert);
       
       const html = `
         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50" id="cert-${id}">
@@ -1191,10 +1378,10 @@
             <button onclick="removeCertification(${id})" class="btn-danger">Remove</button>
           </div>
           <div class="grid md:grid-cols-2 gap-3">
-            <input type="text" class="field-input" placeholder="Certification Name" value="${cert.name}" onchange="updateCertification(${id}, 'name', this.value)">
-            <input type="text" class="field-input" placeholder="Issuing Organization" value="${cert.issuer}" onchange="updateCertification(${id}, 'issuer', this.value)">
-            <input type="text" class="field-input" placeholder="Date Earned" value="${cert.date}" onchange="updateCertification(${id}, 'date', this.value)">
-            <input type="text" class="field-input" placeholder="Expiration (optional)" value="${cert.expiration}" onchange="updateCertification(${id}, 'expiration', this.value)">
+            <input type="text" class="field-input" placeholder="Certification Name" value="${escapeHtml(cert.name)}" oninput="updateCertification(${id}, 'name', this.value)">
+            <input type="text" class="field-input" placeholder="Issuing Organization" value="${escapeHtml(cert.issuer)}" oninput="updateCertification(${id}, 'issuer', this.value)">
+            <input type="text" class="field-input" placeholder="Date Earned" value="${escapeHtml(cert.date)}" oninput="updateCertification(${id}, 'date', this.value)">
+            <input type="text" class="field-input" placeholder="Expiration (optional)" value="${escapeHtml(cert.expiration)}" oninput="updateCertification(${id}, 'expiration', this.value)">
           </div>
         </div>
       `;
@@ -1220,8 +1407,9 @@
 
     // Project Management
     function addProject(data = null) {
-      const id = Date.now();
-      const proj = data || { id, name: '', description: '', technologies: '', link: '' };
+      const proj = data || { id: createEditorId(), name: '', description: '', technologies: '', link: '' };
+      const id = ensureEditorId(proj);
+      Object.assign(proj, { id, name: '', description: '', technologies: '', link: '' }, proj);
       
       const html = `
         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50" id="proj-${id}">
@@ -1230,10 +1418,10 @@
             <button onclick="removeProject(${id})" class="btn-danger">Remove</button>
           </div>
           <div class="grid md:grid-cols-2 gap-3">
-            <input type="text" class="field-input" placeholder="Project Name" value="${proj.name}" onchange="updateProject(${id}, 'name', this.value)">
-            <input type="text" class="field-input" placeholder="Technologies Used (comma separated)" value="${proj.technologies}" onchange="updateProject(${id}, 'technologies', this.value)">
-            <input type="text" class="field-input md:col-span-2" placeholder="Project URL (GitHub, Live Demo, etc.)" value="${proj.link}" onchange="updateProject(${id}, 'link', this.value)">
-            <textarea class="field-input md:col-span-2" rows="3" placeholder="Project description and your contributions" onchange="updateProject(${id}, 'description', this.value)">${proj.description}</textarea>
+            <input type="text" class="field-input" placeholder="Project Name" value="${escapeHtml(proj.name)}" oninput="updateProject(${id}, 'name', this.value)">
+            <input type="text" class="field-input" placeholder="Technologies Used (comma separated)" value="${escapeHtml(proj.technologies)}" oninput="updateProject(${id}, 'technologies', this.value)">
+            <input type="text" class="field-input md:col-span-2" placeholder="Project URL (GitHub, Live Demo, etc.)" value="${escapeHtml(proj.link)}" oninput="updateProject(${id}, 'link', this.value)">
+            <textarea class="field-input md:col-span-2" rows="3" placeholder="Project description and your contributions" oninput="updateProject(${id}, 'description', this.value)">${escapeHtml(proj.description)}</textarea>
           </div>
         </div>
       `;
@@ -1259,12 +1447,13 @@
 
     // Language Management
     function addLanguage(data = null) {
-      const id = Date.now();
-      const lang = data || { id, name: '', proficiency: 'conversational' };
+      const lang = data || { id: createEditorId(), name: '', proficiency: 'conversational' };
+      const id = ensureEditorId(lang);
+      Object.assign(lang, { id, name: '', proficiency: 'conversational' }, lang);
       
       const html = `
         <div class="flex gap-3 items-center" id="lang-${id}">
-          <input type="text" class="field-input flex-1" placeholder="Language (e.g., Spanish)" value="${lang.name}" onchange="updateLanguage(${id}, 'name', this.value)">
+          <input type="text" class="field-input flex-1" placeholder="Language (e.g., Spanish)" value="${escapeHtml(lang.name)}" oninput="updateLanguage(${id}, 'name', this.value)">
           <select class="field-input w-40" onchange="updateLanguage(${id}, 'proficiency', this.value)">
             <option value="native" ${lang.proficiency === 'native' ? 'selected' : ''}>Native</option>
             <option value="fluent" ${lang.proficiency === 'fluent' ? 'selected' : ''}>Fluent</option>
@@ -1297,6 +1486,9 @@
     // ATS Scoring System
     function updateATSScore() {
       // Update data from form
+      resumeData.basics = resumeData.basics || {};
+      resumeData.target = resumeData.target || {};
+      normalizeSectionSettings();
       resumeData.title = document.getElementById('resumeTitle').value;
       resumeData.basics.name = document.getElementById('basicsName').value;
       resumeData.basics.headline = document.getElementById('basicsHeadline').value;
@@ -1358,6 +1550,9 @@
       else fill.classList.add('score-poor');
 
       pushLivePreview();
+      if (!suppressAutoSave) {
+        scheduleAutoSave();
+      }
     }
 
     // Template Selection
@@ -1761,6 +1956,7 @@
     async function persistResume() {
       const params = new URLSearchParams(window.location.search);
       const resumeId = params.get('id');
+      normalizeSectionSettings();
       const payload = {
         title: resumeData.title || 'Untitled Resume',
         content: JSON.stringify(resumeData),
@@ -1834,6 +2030,7 @@
             const parsed = JSON.parse(importedData);
             // Merge imported data with defaults
             resumeData = { ...resumeData, ...parsed };
+            normalizeSectionSettings();
             
             // Populate form fields
             document.getElementById('resumeTitle').value = resumeData.title || 'Imported Resume';
@@ -1894,6 +2091,7 @@
                 : data.resume.content;
               
               resumeData = { ...resumeData, ...content };
+              normalizeSectionSettings();
               
               // Populate form fields
               document.getElementById('resumeTitle').value = data.resume.title || '';
@@ -2148,14 +2346,14 @@
       const expEmpty = document.getElementById('experienceEmptyState');
       const expList = document.getElementById('experienceList');
       if (expEmpty && expList) {
-        const hasItems = expList.querySelectorAll('.experience-item, [data-type="experience"]').length > 0;
+        const hasItems = expList.querySelectorAll('[id^="exp-"], .experience-item, [data-type="experience"]').length > 0;
         expEmpty.style.display = hasItems ? 'none' : 'flex';
       }
       // Education
       const eduEmpty = document.getElementById('educationEmptyState');
       const eduList = document.getElementById('educationList');
       if (eduEmpty && eduList) {
-        const hasItems = eduList.querySelectorAll('.education-item, [data-type="education"]').length > 0;
+        const hasItems = eduList.querySelectorAll('[id^="edu-"], .education-item, [data-type="education"]').length > 0;
         eduEmpty.style.display = hasItems ? 'none' : 'flex';
       }
       // Skills
@@ -2188,11 +2386,11 @@
     // COMPLETION BAR
     // ═══════════════════════════════════════════
     function updateCompletion() {
-      if (!window.resumeData) return;
-      const d = window.resumeData;
+      if (!resumeData) return;
+      const d = resumeData;
       const checks = {
         personal: !!(d.basics?.name && d.basics?.email),
-        summary: !!(d.basics?.summary && d.basics.summary.length > 20),
+        summary: !!(d.summary && d.summary.length > 20),
         skills: !!(d.skills && d.skills.length >= 2),
         experience: !!(d.experience && d.experience.length > 0),
         education: !!(d.education && d.education.length > 0)
@@ -2209,8 +2407,8 @@
       if (pctEl) pctEl.textContent = pct + '%';
       const missing = Object.entries(checks).find(([,v]) => !v);
       if (msgEl) {
-        if (pct === 100) msgEl.textContent = '🎉 Great resume! Ready to export.';
-        else if (missing) msgEl.textContent = 'Resume is ' + pct + '% complete — add ' + missing[0] + ' to improve';
+        if (pct === 100) msgEl.textContent = 'Great resume! Ready to export.';
+        else if (missing) msgEl.textContent = 'Resume is ' + pct + '% complete - add ' + missing[0] + ' to improve';
         else msgEl.textContent = 'Keep filling in your sections';
       }
       ['personal','summary','skills','experience','education'].forEach(k => {
@@ -2244,6 +2442,7 @@
     }
 
     function scheduleAutoSave() {
+      if (suppressAutoSave) return;
       isDirty = true;
       clearTimeout(autoSaveTimer);
       autoSaveTimer = setTimeout(async () => {
@@ -2252,19 +2451,14 @@
         if (!resumeId) return;
         setAutosaveStatus('saving', 'Saving...');
         try {
-          const res = await fetch('/api/resumes/' + resumeId, {
-            method: 'PUT',
-            headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + localStorage.getItem('token') },
-            body: JSON.stringify({ title: window.resumeData?.basics?.name ? window.resumeData.basics.name + ' — Resume' : 'My Resume', content: window.resumeData })
-          });
-          if (!res.ok) throw new Error('Save failed');
+          await persistResume();
           isDirty = false;
-          setAutosaveStatus('saved', 'All changes saved ✓');
+          setAutosaveStatus('saved', 'All changes saved');
         } catch(e) {
-          setAutosaveStatus('error', 'Save failed — click to retry');
+          setAutosaveStatus('error', 'Save failed - click to retry');
           document.getElementById('autosaveStatus').onclick = scheduleAutoSave;
         }
-      }, 30000);
+      }, 1500);
     }
 
     // Hook dirty tracking into oninput events

@@ -347,6 +347,117 @@
         requestAnimationFrame(fitEmbedPreview);
       }
     }
+
+    function getPresetSectionOrder(preset = 'skills-first') {
+      if (preset === 'experience-first') {
+        return ['summary', 'experience', 'skills', 'projects', 'certifications', 'education', 'languages'];
+      }
+      if (preset === 'education-first') {
+        return ['summary', 'education', 'skills', 'experience', 'projects', 'certifications', 'languages'];
+      }
+      return ['summary', 'skills', 'experience', 'projects', 'certifications', 'education', 'languages'];
+    }
+
+    function getOrderedResumeSections() {
+      const validKeys = ['summary', 'skills', 'experience', 'education', 'certifications', 'projects', 'languages'];
+      const settings = resumeData?.settings || {};
+      const hidden = new Set(Array.isArray(settings.hiddenSections) ? settings.hiddenSections : []);
+      let order = Array.isArray(settings.sectionOrderList)
+        ? settings.sectionOrderList.filter(key => validKeys.includes(key))
+        : getPresetSectionOrder(settings.sectionOrder);
+
+      validKeys.forEach(key => {
+        if (!order.includes(key)) order.push(key);
+      });
+
+      return order.filter(key => !hidden.has(key));
+    }
+
+    function isSectionVisible(key) {
+      return getOrderedResumeSections().includes(key);
+    }
+
+    function renderOrderedSections() {
+      const renderers = {
+        summary: () => resumeData.summary ? `
+          <div class="section">
+            <div class="section-title">Professional Summary</div>
+            <p>${resumeData.summary}</p>
+          </div>
+        ` : '',
+        skills: () => resumeData.skills?.length ? `
+          <div class="section">
+            <div class="section-title">Skills</div>
+            <div class="skills-list">
+              ${resumeData.skills.map(s => `<span class="skill-tag">${s.name}</span>`).join('')}
+            </div>
+          </div>
+        ` : '',
+        experience: () => resumeData.experience?.length ? `
+          <div class="section">
+            <div class="section-title">Work Experience</div>
+            ${resumeData.experience.map(exp => `
+              <div class="experience-item">
+                <div class="exp-header">
+                  <span>${exp.position || ''}</span>
+                  <span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' - ')}</span>
+                </div>
+                <div class="exp-company">${exp.company || ''}${exp.location ? `, ${exp.location}` : ''}</div>
+                ${exp.bullets?.filter(b => b).map(b => `<div class="bullet">• ${b}</div>`).join('') || ''}
+              </div>
+            `).join('')}
+          </div>
+        ` : '',
+        education: () => resumeData.education?.length ? `
+          <div class="section">
+            <div class="section-title">Education</div>
+            ${resumeData.education.map(edu => `
+              <div class="experience-item">
+                <div class="exp-header">
+                  <span>${edu.school || ''}</span>
+                  <span class="exp-date">${edu.graduationDate || ''}</span>
+                </div>
+                <div>${edu.degree || ''}${edu.field ? `, ${edu.field}` : ''}</div>
+              </div>
+            `).join('')}
+          </div>
+        ` : '',
+        certifications: () => resumeData.certifications?.length ? `
+          <div class="section">
+            <div class="section-title">Certifications</div>
+            ${resumeData.certifications.map(cert => {
+              const meta = [cert.issuer, cert.date].filter(Boolean).join(' • ');
+              return `<div class="bullet"><strong>${cert.name || ''}</strong>${meta ? ` - ${meta}` : ''}</div>`;
+            }).join('')}
+          </div>
+        ` : '',
+        projects: () => resumeData.projects?.length ? `
+          <div class="section">
+            <div class="section-title">Projects</div>
+            ${resumeData.projects.map(project => `
+              <div class="experience-item">
+                <div class="exp-header">
+                  <span>${project.name || ''}</span>
+                  <span class="exp-date">${project.technologies || ''}</span>
+                </div>
+                ${project.link ? `<div class="exp-company">${project.link}</div>` : ''}
+                ${project.description ? `<p>${project.description}</p>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        ` : '',
+        languages: () => resumeData.languages?.length ? `
+          <div class="section">
+            <div class="section-title">Languages</div>
+            <div class="skills-list">
+              ${resumeData.languages.map(l => `<span class="skill-tag">${l.name} (${l.proficiency})</span>`).join('')}
+            </div>
+          </div>
+        ` : ''
+      };
+
+      return getOrderedResumeSections().map(key => renderers[key]?.() || '').join('');
+    }
     
     function changeTemplate() {
       currentTemplate = document.getElementById('templateSelect').value;
@@ -383,15 +494,15 @@
 
             ${resumeData.basics?.linkedIn ? `<div class="sidebar-section"><div class="sidebar-title">Profiles</div><div class="sidebar-item">LinkedIn<br>${resumeData.basics.linkedIn}</div></div>` : ''}
 
-            ${resumeData.skills?.length ? `<div class="sidebar-section"><div class="sidebar-title">Skills</div>${resumeData.skills.slice(0, 8).map(s => `<div class="sidebar-item"><strong>${s.name}</strong><br>${(s.proficiency || '').replace(/^./, c => c.toUpperCase())}</div>`).join('')}</div>` : ''}
+            ${isSectionVisible('skills') && resumeData.skills?.length ? `<div class="sidebar-section"><div class="sidebar-title">Skills</div>${resumeData.skills.slice(0, 8).map(s => `<div class="sidebar-item"><strong>${s.name}</strong><br>${(s.proficiency || '').replace(/^./, c => c.toUpperCase())}</div>`).join('')}</div>` : ''}
 
-            ${resumeData.certifications?.length ? `<div class="sidebar-section"><div class="sidebar-title">Certifications</div>${resumeData.certifications.map(cert => `<div class="sidebar-item"><strong>${cert.name}</strong>${cert.issuer ? `<br>${cert.issuer}` : ''}${cert.date ? `<br>${cert.date}` : ''}</div>`).join('')}</div>` : ''}
+            ${isSectionVisible('certifications') && resumeData.certifications?.length ? `<div class="sidebar-section"><div class="sidebar-title">Certifications</div>${resumeData.certifications.map(cert => `<div class="sidebar-item"><strong>${cert.name}</strong>${cert.issuer ? `<br>${cert.issuer}` : ''}${cert.date ? `<br>${cert.date}` : ''}</div>`).join('')}</div>` : ''}
           </div>
           <div class="main">
-            ${resumeData.summary ? `<div class="section"><div class="section-title">Summary</div><div class="plain-text">${resumeData.summary}</div></div>` : ''}
-            ${resumeData.experience?.length ? `<div class="section"><div class="section-title">Experience</div>${resumeData.experience.map(exp => `<div class="experience-item"><div class="exp-header"><span>${exp.company || ''}</span><span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' to ')}</span></div><div class="exp-company">${exp.position || ''}${exp.location ? `, ${exp.location}` : ''}</div>${exp.url ? `<div class="plain-text">${exp.url}</div>` : ''}${exp.bullets?.filter(b => b).map(b => `<div class="bullet">• ${b}</div>`).join('') || ''}</div>`).join('')}</div>` : ''}
-            ${resumeData.education?.length ? `<div class="section"><div class="section-title">Education</div>${resumeData.education.map(edu => `<div class="experience-item"><div class="exp-header"><span>${edu.school || ''}</span><span class="exp-date">${edu.graduationDate || ''}</span></div><div class="exp-company">${edu.degree || ''}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
-            ${resumeData.projects?.length ? `<div class="section"><div class="section-title">Projects</div>${resumeData.projects.map(project => `<div class="experience-item"><div class="exp-company">${project.name || ''}</div><div class="plain-text">${project.role || ''}</div><div class="plain-text">${project.description || ''}</div></div>`).join('')}</div>` : ''}
+            ${isSectionVisible('summary') && resumeData.summary ? `<div class="section"><div class="section-title">Summary</div><div class="plain-text">${resumeData.summary}</div></div>` : ''}
+            ${isSectionVisible('experience') && resumeData.experience?.length ? `<div class="section"><div class="section-title">Experience</div>${resumeData.experience.map(exp => `<div class="experience-item"><div class="exp-header"><span>${exp.company || ''}</span><span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' to ')}</span></div><div class="exp-company">${exp.position || ''}${exp.location ? `, ${exp.location}` : ''}</div>${exp.url ? `<div class="plain-text">${exp.url}</div>` : ''}${exp.bullets?.filter(b => b).map(b => `<div class="bullet">• ${b}</div>`).join('') || ''}</div>`).join('')}</div>` : ''}
+            ${isSectionVisible('education') && resumeData.education?.length ? `<div class="section"><div class="section-title">Education</div>${resumeData.education.map(edu => `<div class="experience-item"><div class="exp-header"><span>${edu.school || ''}</span><span class="exp-date">${edu.graduationDate || ''}</span></div><div class="exp-company">${edu.degree || ''}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
+            ${isSectionVisible('projects') && resumeData.projects?.length ? `<div class="section"><div class="section-title">Projects</div>${resumeData.projects.map(project => `<div class="experience-item"><div class="exp-company">${project.name || ''}</div><div class="plain-text">${project.role || ''}</div><div class="plain-text">${project.description || ''}</div></div>`).join('')}</div>` : ''}
           </div>
         `;
 
@@ -435,7 +546,7 @@
               </div>
             ` : ''}
 
-            ${resumeData.skills?.length ? `
+            ${isSectionVisible('skills') && resumeData.skills?.length ? `
               <div class="sidebar-section">
                 <div class="sidebar-title">Technical Skills</div>
                 ${resumeData.skills.slice(0, 8).map(s => {
@@ -445,7 +556,7 @@
               </div>
             ` : ''}
 
-            ${resumeData.languages?.length ? `
+            ${isSectionVisible('languages') && resumeData.languages?.length ? `
               <div class="sidebar-section">
                 <div class="sidebar-title">Languages</div>
                 ${resumeData.languages.map(lang => `<div class="sidebar-item"><strong>${lang.name}</strong> - ${lang.proficiency}</div>`).join('')}
@@ -459,13 +570,13 @@
               ${resumeData.basics?.headline ? `<div class="title">${resumeData.basics.headline}</div>` : ''}
             </div>
             
-            ${resumeData.summary ? `<div class="section"><div class="section-title">Professional Summary</div><div class="summary-text">${resumeData.summary}</div></div>` : ''}
+            ${isSectionVisible('summary') && resumeData.summary ? `<div class="section"><div class="section-title">Professional Summary</div><div class="summary-text">${resumeData.summary}</div></div>` : ''}
             
-            ${resumeData.experience?.length ? `<div class="section"><div class="section-title">Experience</div>${resumeData.experience.map(exp => `<div class="experience-item"><div class="exp-header"><span>${exp.position}</span><span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' - ')}</span></div><div class="exp-company">${exp.company}${exp.location ? `, ${exp.location}` : ''}</div>${exp.bullets?.filter(b => b).map(b => `<div class="bullet">• ${b}</div>`).join('') || ''}</div>`).join('')}</div>` : ''}
+            ${isSectionVisible('experience') && resumeData.experience?.length ? `<div class="section"><div class="section-title">Experience</div>${resumeData.experience.map(exp => `<div class="experience-item"><div class="exp-header"><span>${exp.position}</span><span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' - ')}</span></div><div class="exp-company">${exp.company}${exp.location ? `, ${exp.location}` : ''}</div>${exp.bullets?.filter(b => b).map(b => `<div class="bullet">• ${b}</div>`).join('') || ''}</div>`).join('')}</div>` : ''}
             
-            ${resumeData.education?.length ? `<div class="section"><div class="section-title">Education</div>${resumeData.education.map(edu => `<div class="experience-item"><div class="exp-header"><span>${edu.school}</span><span class="exp-date">${edu.graduationDate}</span></div><div class="exp-company">${edu.degree}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
+            ${isSectionVisible('education') && resumeData.education?.length ? `<div class="section"><div class="section-title">Education</div>${resumeData.education.map(edu => `<div class="experience-item"><div class="exp-header"><span>${edu.school}</span><span class="exp-date">${edu.graduationDate}</span></div><div class="exp-company">${edu.degree}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
             
-            ${resumeData.certifications?.length ? `<div class="section"><div class="section-title">Certifications</div>${resumeData.certifications.map(cert => `<div class="experience-item"><div class="exp-header"><span>${cert.name}</span><span class="exp-date">${cert.date}</span></div><div class="exp-company">${cert.issuer}</div></div>`).join('')}</div>` : ''}
+            ${isSectionVisible('certifications') && resumeData.certifications?.length ? `<div class="section"><div class="section-title">Certifications</div>${resumeData.certifications.map(cert => `<div class="experience-item"><div class="exp-header"><span>${cert.name}</span><span class="exp-date">${cert.date}</span></div><div class="exp-company">${cert.issuer}</div></div>`).join('')}</div>` : ''}
           </div>
         `;
 
@@ -504,100 +615,8 @@
           ${resumeData.basics?.profilePhoto ? `<div style="width:96px; height:96px; border-radius:12px; overflow:hidden; flex-shrink:0; border:1px solid rgba(0,0,0,0.08);"><img src="${resumeData.basics.profilePhoto}" alt="Profile photo" style="width:100%; height:100%; object-fit:cover; display:block;"></div>` : ''}
         </div>
       `;
-      
-      // Summary
-      if (resumeData.summary) {
-        html += `
-          <div class="section">
-            <div class="section-title">Professional Summary</div>
-            <p>${resumeData.summary}</p>
-          </div>
-        `;
-      }
-      
-      // Skills
-      if (resumeData.skills?.length) {
-        html += `
-          <div class="section">
-            <div class="section-title">Skills</div>
-            <div class="skills-list">
-              ${resumeData.skills.map(s => `
-                <span class="skill-tag">${s.name}</span>
-              `).join('')}
-            </div>
-          </div>
-        `;
-      }
-      
-      // Experience
-      if (resumeData.experience?.length) {
-        html += `
-          <div class="section">
-            <div class="section-title">Work Experience</div>
-            ${resumeData.experience.map(exp => `
-              <div class="experience-item">
-                <div class="exp-header">
-                  <span>${exp.position}</span>
-                  <span class="exp-date">${exp.startDate} - ${exp.endDate || 'Present'}</span>
-                </div>
-                <div class="exp-company">${exp.company}${exp.location ? `, ${exp.location}` : ''}</div>
-                ${exp.bullets?.filter(b => b).map(b => `
-                  <div class="bullet">• ${b}</div>
-                `).join('') || ''}
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
-      
-      // Education
-      if (resumeData.education?.length) {
-        html += `
-          <div class="section">
-            <div class="section-title">Education</div>
-            ${resumeData.education.map(edu => `
-              <div class="experience-item">
-                <div class="exp-header">
-                  <span>${edu.school}</span>
-                  <span class="exp-date">${edu.graduationDate}</span>
-                </div>
-                <div>${edu.degree}${edu.field ? `, ${edu.field}` : ''}</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
-      
-      // Certifications
-      if (resumeData.certifications?.length) {
-        html += `
-          <div class="section">
-            <div class="section-title">Certifications</div>
-            ${resumeData.certifications.map(cert => {
-              const meta = [cert.issuer, cert.date].filter(Boolean).join(' • ');
-              return `
-                <div class="bullet">
-                  <strong>${cert.name}</strong>${meta ? ` - ${meta}` : ''}
-                </div>
-              `;
-            }).join('')}
-          </div>
-        `;
-      }
-      
-      // Languages
-      if (resumeData.languages?.length) {
-        html += `
-          <div class="section">
-            <div class="section-title">Languages</div>
-            <div class="skills-list">
-              ${resumeData.languages.map(l => `
-                <span class="skill-tag">${l.name} (${l.proficiency})</span>
-              `).join('')}
-            </div>
-          </div>
-        `;
-      }
+
+      html += renderOrderedSections();
       
       if (!embedMode && (currentUser?.subscription_tier || 'free') === 'free') {
         html += '<div class="pdf-watermark">cvmaker.ink</div>';
