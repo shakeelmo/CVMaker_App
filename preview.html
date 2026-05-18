@@ -18,6 +18,42 @@
       box-shadow: 0 0 20px rgba(0,0,0,0.1);
       position: relative;
       padding-bottom: 24mm;
+      box-sizing: border-box;
+    }
+    .resume-container,
+    .resume-container * {
+      box-sizing: border-box;
+    }
+    .resume-container p,
+    .resume-container .plain-text,
+    .resume-container .summary-text,
+    .resume-container .bullet,
+    .resume-container .contact,
+    .resume-container .sidebar-item,
+    .resume-container .skill-tag,
+    .resume-container .exp-company,
+    .resume-container .exp-header span {
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+    .resume-container p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #111827;
+    }
+    body.embed-preview {
+      margin: 0;
+      overflow-x: hidden;
+      background: white;
+    }
+    body.embed-preview #resumeContainer {
+      width: 100%;
+      overflow: hidden;
+    }
+    body.embed-preview .resume-container {
+      transform-origin: top center;
+      box-shadow: none;
     }
     .pdf-watermark {
       position: absolute;
@@ -225,11 +261,13 @@
       if (embedMode) {
         document.body.classList.remove('bg-gray-100');
         document.body.classList.add('bg-white');
+        document.body.classList.add('embed-preview');
         document.querySelectorAll('.no-print').forEach(el => el.remove());
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('resumeContainer').classList.remove('hidden');
         document.getElementById('resumeContainer').classList.remove('pt-24', 'pb-10', 'px-4');
         window.addEventListener('message', handleEmbedMessage);
+        window.addEventListener('resize', fitEmbedPreview);
         if (window.parent !== window) {
           window.parent.postMessage({ type: 'preview-ready' }, '*');
         }
@@ -285,6 +323,30 @@
       currentTemplate = message.template || resumeData?.template || 'modern';
       renderResume();
     }
+
+    function fitEmbedPreview() {
+      if (!embedMode) return;
+      const outer = document.getElementById('resumeContainer');
+      const resume = document.getElementById('resume');
+      if (!outer || !resume) return;
+
+      resume.style.transform = '';
+      outer.style.height = '';
+
+      const availableWidth = outer.clientWidth;
+      const pageWidth = resume.offsetWidth;
+      if (!availableWidth || !pageWidth) return;
+
+      const scale = Math.min(1, availableWidth / pageWidth);
+      resume.style.transform = `scale(${scale})`;
+      outer.style.height = `${resume.scrollHeight * scale}px`;
+    }
+
+    function finalizeResumeRender() {
+      if (embedMode) {
+        requestAnimationFrame(fitEmbedPreview);
+      }
+    }
     
     function changeTemplate() {
       currentTemplate = document.getElementById('templateSelect').value;
@@ -338,6 +400,7 @@
         }
 
         container.innerHTML = html;
+        finalizeResumeRender();
         return;
       }
       
@@ -411,6 +474,7 @@
         }
 
         container.innerHTML = html;
+        finalizeResumeRender();
         return;
       }
       
@@ -540,6 +604,7 @@
       }
 
       container.innerHTML = html;
+      finalizeResumeRender();
     }
     
     function downloadPDF(autoTriggered = false) {
