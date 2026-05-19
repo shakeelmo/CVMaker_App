@@ -1225,7 +1225,7 @@
 
     // Experience Management
     function addExperience(data = null) {
-      const exp = data || {
+      const exp = Object.assign({
         id: createEditorId(),
         company: '',
         position: '',
@@ -1234,21 +1234,16 @@
         endDate: '',
         current: false,
         bullets: ['', '', '']
-      };
+      }, data || {});
       const id = ensureEditorId(exp);
       exp.id = id;
       exp.bullets = Array.isArray(exp.bullets) && exp.bullets.length ? exp.bullets : ['', '', ''];
-      Object.assign(exp, {
-        id, company: '', position: '', location: '', 
-        startDate: '', endDate: '', current: false,
-        bullets: ['', '', ''] 
-      }, exp);
       
       const html = `
         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50" id="exp-${id}">
           <div class="flex justify-between mb-3">
             <span class="font-medium text-gray-700">Work Experience</span>
-            <button onclick="removeExperience(${id})" class="btn-danger">Remove</button>
+            <button type="button" onclick="removeExperience(${id})" class="btn-danger">Remove</button>
           </div>
           <div class="grid md:grid-cols-2 gap-3">
             <input type="text" class="field-input" placeholder="Company Name" value="${escapeHtml(exp.company)}" oninput="updateExperience(${id}, 'company', this.value)">
@@ -1270,7 +1265,7 @@
                   <input type="text" class="field-input flex-1" placeholder="Achievement with metrics (e.g., Increased sales by 25%)" value="${escapeHtml(bullet)}" oninput="updateBullet(${id}, ${i}, this.value)">
                 </div>
               `).join('')}
-              <button onclick="addBullet(${id})" class="text-blue-600 text-sm mt-2 hover:underline">
+              <button type="button" onclick="addBullet(${id})" class="text-blue-600 text-sm mt-2 hover:underline">
                 <i class="fas fa-plus mr-1"></i>Add bullet point
               </button>
             </div>
@@ -1278,11 +1273,14 @@
         </div>
       `;
       
-      document.getElementById('experienceList').insertAdjacentHTML('beforeend', html);
+      const list = document.getElementById('experienceList');
+      list.insertAdjacentHTML('beforeend', html);
+      const inserted = document.getElementById(`exp-${id}`);
       if (!data) {
         resumeData.experience.push(exp);
         updateATSScore();
       }
+      return inserted;
     }
 
     function updateExperience(id, field, value) {
@@ -1300,11 +1298,20 @@
     function addBullet(expId) {
       const item = resumeData.experience.find(e => e.id == expId);
       if (item) {
+        item.bullets = Array.isArray(item.bullets) ? item.bullets : ['', '', ''];
         item.bullets.push('');
-        // Re-render just this section
         const el = document.getElementById(`exp-${expId}`);
-        el.remove();
-        addExperience(item);
+        if (el) {
+          const list = document.getElementById('experienceList');
+          const nextEl = el.nextElementSibling;
+          el.remove();
+          const inserted = addExperience(item);
+          if (nextEl && inserted) {
+            list.insertBefore(inserted, nextEl);
+          }
+        } else {
+          addExperience(item);
+        }
         updateATSScore();
       }
     }
