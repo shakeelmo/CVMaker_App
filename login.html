@@ -110,17 +110,17 @@
         const result = await response.json();
         
         if (response.ok) {
-          msgDiv.innerHTML = `<div class="success">✅ Login successful! Redirecting...&lt;/div>`;
+          msgDiv.innerHTML = '<div class="success">✅ Login Successfully!</div>';
           localStorage.setItem('token', result.token);
           localStorage.setItem('user', JSON.stringify(result.user));
           setTimeout(() => window.location.href = '/dashboard.html', 1500);
         } else {
-          msgDiv.innerHTML = `<div class="error">❌ ${result.error || 'Login failed'}&lt;/div>`;
+          msgDiv.innerHTML = `<div class="error">❌ ${result.error || 'Login failed'}</div>`;
           btn.textContent = 'Sign In';
           btn.disabled = false;
         }
       } catch (err) {
-        msgDiv.innerHTML = `<div class="error">❌ Network error. Please try again.&lt;/div>`;
+        msgDiv.innerHTML = '<div class="error">❌ Network error. Please try again.</div>';
         btn.textContent = 'Sign In';
         btn.disabled = false;
       }
