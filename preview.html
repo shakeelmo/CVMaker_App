@@ -21,6 +21,7 @@
       position: relative;
       padding-bottom: 24mm;
       box-sizing: border-box;
+      overflow: visible;
     }
     .resume-container,
     .resume-container * {
@@ -43,6 +44,27 @@
       font-size: 13px;
       line-height: 1.6;
       color: #111827;
+    }
+    .resume-container .header,
+    .resume-container .section-title,
+    .resume-container .experience-item,
+    .resume-container .bullet,
+    .resume-container .skills-list,
+    .resume-container .skill-tag,
+    .resume-container .sidebar-card,
+    .resume-container .sidebar-section {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .resume-container .section-title,
+    .resume-container .exp-header,
+    .resume-container .exp-company {
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+    .resume-container .section {
+      break-inside: auto;
+      page-break-inside: auto;
     }
     body.embed-preview {
       margin: 0;
@@ -70,8 +92,10 @@
       width: 794px !important;
       min-height: 1123px !important;
       margin: 0 !important;
+      padding-bottom: 64px !important;
       box-shadow: none !important;
       transform: none !important;
+      overflow: visible !important;
     }
     .pdf-watermark {
       position: absolute;
@@ -391,45 +415,100 @@
       return order.filter(key => !hidden.has(key));
     }
 
-    function isSectionVisible(key) {
-      return getOrderedResumeSections().includes(key);
+    function cleanText(value) {
+      return value === null || value === undefined ? '' : String(value).trim();
     }
 
-    function renderOrderedSections() {
+    function hasText(value) {
+      return cleanText(value) !== '';
+    }
+
+    function normalizeBullets(bullets) {
+      if (!Array.isArray(bullets)) {
+        return hasText(bullets) ? [cleanText(bullets)] : [];
+      }
+      return bullets.map(cleanText).filter(Boolean);
+    }
+
+    function getRenderableResumeData() {
+      const data = resumeData || {};
+      return {
+        basics: data.basics || {},
+        settings: data.settings || {},
+        summary: cleanText(data.summary),
+        skills: (data.skills || [])
+          .map(skill => typeof skill === 'string' ? { name: cleanText(skill) } : { ...skill, name: cleanText(skill?.name) })
+          .filter(skill => hasText(skill.name)),
+        experience: (data.experience || [])
+          .map(exp => ({ ...exp, bullets: normalizeBullets(exp?.bullets) }))
+          .filter(exp => ['company', 'position', 'location', 'startDate', 'endDate'].some(key => hasText(exp?.[key])) || exp.bullets.length),
+        education: (data.education || [])
+          .filter(edu => ['school', 'degree', 'field', 'graduationDate', 'gpa'].some(key => hasText(edu?.[key]))),
+        certifications: (data.certifications || [])
+          .filter(cert => ['name', 'issuer', 'date', 'expiration'].some(key => hasText(cert?.[key]))),
+        projects: (data.projects || [])
+          .filter(project => ['name', 'role', 'description', 'technologies', 'link'].some(key => hasText(project?.[key]))),
+        languages: (data.languages || [])
+          .filter(lang => hasText(lang?.name))
+      };
+    }
+
+    function sectionHasContent(key, data = getRenderableResumeData()) {
+      const checks = {
+        summary: () => hasText(data.summary),
+        skills: () => data.skills.length > 0,
+        experience: () => data.experience.length > 0,
+        education: () => data.education.length > 0,
+        certifications: () => data.certifications.length > 0,
+        projects: () => data.projects.length > 0,
+        languages: () => data.languages.length > 0
+      };
+      return checks[key]?.() || false;
+    }
+
+    function getRenderableSectionOrder(data = getRenderableResumeData()) {
+      return getOrderedResumeSections().filter(key => sectionHasContent(key, data));
+    }
+
+    function isSectionVisible(key, data = getRenderableResumeData()) {
+      return getRenderableSectionOrder(data).includes(key);
+    }
+
+    function renderOrderedSections(data = getRenderableResumeData()) {
       const renderers = {
-        summary: () => resumeData.summary ? `
+        summary: () => data.summary ? `
           <div class="section">
             <div class="section-title">Professional Summary</div>
-            <p>${resumeData.summary}</p>
+            <p>${data.summary}</p>
           </div>
         ` : '',
-        skills: () => resumeData.skills?.length ? `
+        skills: () => data.skills.length ? `
           <div class="section">
             <div class="section-title">Skills</div>
             <div class="skills-list">
-              ${resumeData.skills.map(s => `<span class="skill-tag">${s.name}</span>`).join('')}
+              ${data.skills.map(s => `<span class="skill-tag">${s.name}</span>`).join('')}
             </div>
           </div>
         ` : '',
-        experience: () => resumeData.experience?.length ? `
+        experience: () => data.experience.length ? `
           <div class="section">
             <div class="section-title">Work Experience</div>
-            ${resumeData.experience.map(exp => `
+            ${data.experience.map(exp => `
               <div class="experience-item">
                 <div class="exp-header">
                   <span>${exp.position || ''}</span>
                   <span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' - ')}</span>
                 </div>
                 <div class="exp-company">${exp.company || ''}${exp.location ? `, ${exp.location}` : ''}</div>
-                ${exp.bullets?.filter(b => b).map(b => `<div class="bullet">• ${b}</div>`).join('') || ''}
+                ${exp.bullets.map(b => `<div class="bullet">• ${b}</div>`).join('')}
               </div>
             `).join('')}
           </div>
         ` : '',
-        education: () => resumeData.education?.length ? `
+        education: () => data.education.length ? `
           <div class="section">
             <div class="section-title">Education</div>
-            ${resumeData.education.map(edu => `
+            ${data.education.map(edu => `
               <div class="experience-item">
                 <div class="exp-header">
                   <span>${edu.school || ''}</span>
@@ -440,19 +519,19 @@
             `).join('')}
           </div>
         ` : '',
-        certifications: () => resumeData.certifications?.length ? `
+        certifications: () => data.certifications.length ? `
           <div class="section">
             <div class="section-title">Certifications</div>
-            ${resumeData.certifications.map(cert => {
+            ${data.certifications.map(cert => {
               const meta = [cert.issuer, cert.date].filter(Boolean).join(' • ');
               return `<div class="bullet"><strong>${cert.name || ''}</strong>${meta ? ` - ${meta}` : ''}</div>`;
             }).join('')}
           </div>
         ` : '',
-        projects: () => resumeData.projects?.length ? `
+        projects: () => data.projects.length ? `
           <div class="section">
             <div class="section-title">Projects</div>
-            ${resumeData.projects.map(project => `
+            ${data.projects.map(project => `
               <div class="experience-item">
                 <div class="exp-header">
                   <span>${project.name || ''}</span>
@@ -464,17 +543,17 @@
             `).join('')}
           </div>
         ` : '',
-        languages: () => resumeData.languages?.length ? `
+        languages: () => data.languages.length ? `
           <div class="section">
             <div class="section-title">Languages</div>
             <div class="skills-list">
-              ${resumeData.languages.map(l => `<span class="skill-tag">${l.name} (${l.proficiency})</span>`).join('')}
+              ${data.languages.map(l => `<span class="skill-tag">${l.name}${l.proficiency ? ` (${l.proficiency})` : ''}</span>`).join('')}
             </div>
           </div>
         ` : ''
       };
 
-      return getOrderedResumeSections().map(key => renderers[key]?.() || '').join('');
+      return getRenderableSectionOrder(data).map(key => renderers[key]?.() || '').join('');
     }
     
     function changeTemplate() {
@@ -485,6 +564,7 @@
     function renderResume() {
       if (!resumeData) return;
       
+      const data = getRenderableResumeData();
       const container = document.getElementById('resume');
       const color = resumeData.settings?.color || '#2563eb';
       
@@ -494,33 +574,33 @@
       let html = '';
 
       if (currentTemplate === 'glalie') {
-        const photoUrl = resumeData.basics?.profilePhoto || resumeData.basics?.photo || '';
+        const photoUrl = data.basics?.profilePhoto || data.basics?.photo || '';
         html += `
           <div class="sidebar">
             <div class="photo">${photoUrl ? `<img src="${photoUrl}" alt="Profile photo">` : ''}</div>
-            ${resumeData.basics?.name ? `<div class="name">${resumeData.basics.name}</div>` : ''}
-            ${resumeData.basics?.headline ? `<div class="title">${resumeData.basics.headline}</div>` : ''}
+            ${data.basics?.name ? `<div class="name">${data.basics.name}</div>` : ''}
+            ${data.basics?.headline ? `<div class="title">${data.basics.headline}</div>` : ''}
 
             <div class="sidebar-card">
-              ${resumeData.basics?.location ? `<div class="sidebar-item">📍 ${resumeData.basics.location}</div>` : ''}
-              ${resumeData.basics?.phone ? `<div class="sidebar-item">☎ ${resumeData.basics.phone}</div>` : ''}
-              ${resumeData.basics?.email ? `<div class="sidebar-item">✉ ${resumeData.basics.email}</div>` : ''}
-              ${resumeData.basics?.url ? `<div class="sidebar-item">🔗 ${resumeData.basics.url}</div>` : ''}
-              ${resumeData.basics?.dateOfBirth ? `<div class="sidebar-item">🎂 ${resumeData.basics.dateOfBirth}</div>` : ''}
-              ${resumeData.basics?.nationality ? `<div class="sidebar-item">🌍 ${resumeData.basics.nationality}</div>` : ''}
+              ${data.basics?.location ? `<div class="sidebar-item">📍 ${data.basics.location}</div>` : ''}
+              ${data.basics?.phone ? `<div class="sidebar-item">☎ ${data.basics.phone}</div>` : ''}
+              ${data.basics?.email ? `<div class="sidebar-item">✉ ${data.basics.email}</div>` : ''}
+              ${data.basics?.url ? `<div class="sidebar-item">🔗 ${data.basics.url}</div>` : ''}
+              ${data.basics?.dateOfBirth ? `<div class="sidebar-item">🎂 ${data.basics.dateOfBirth}</div>` : ''}
+              ${data.basics?.nationality ? `<div class="sidebar-item">🌍 ${data.basics.nationality}</div>` : ''}
             </div>
 
-            ${resumeData.basics?.linkedIn ? `<div class="sidebar-section"><div class="sidebar-title">Profiles</div><div class="sidebar-item">LinkedIn<br>${resumeData.basics.linkedIn}</div></div>` : ''}
+            ${data.basics?.linkedIn ? `<div class="sidebar-section"><div class="sidebar-title">Profiles</div><div class="sidebar-item">LinkedIn<br>${data.basics.linkedIn}</div></div>` : ''}
 
-            ${isSectionVisible('skills') && resumeData.skills?.length ? `<div class="sidebar-section"><div class="sidebar-title">Skills</div>${resumeData.skills.slice(0, 8).map(s => `<div class="sidebar-item"><strong>${s.name}</strong><br>${(s.proficiency || '').replace(/^./, c => c.toUpperCase())}</div>`).join('')}</div>` : ''}
+            ${isSectionVisible('skills', data) ? `<div class="sidebar-section"><div class="sidebar-title">Skills</div>${data.skills.slice(0, 8).map(s => `<div class="sidebar-item"><strong>${s.name}</strong><br>${(s.proficiency || '').replace(/^./, c => c.toUpperCase())}</div>`).join('')}</div>` : ''}
 
-            ${isSectionVisible('certifications') && resumeData.certifications?.length ? `<div class="sidebar-section"><div class="sidebar-title">Certifications</div>${resumeData.certifications.map(cert => `<div class="sidebar-item"><strong>${cert.name}</strong>${cert.issuer ? `<br>${cert.issuer}` : ''}${cert.date ? `<br>${cert.date}` : ''}</div>`).join('')}</div>` : ''}
+            ${isSectionVisible('certifications', data) ? `<div class="sidebar-section"><div class="sidebar-title">Certifications</div>${data.certifications.map(cert => `<div class="sidebar-item"><strong>${cert.name}</strong>${cert.issuer ? `<br>${cert.issuer}` : ''}${cert.date ? `<br>${cert.date}` : ''}</div>`).join('')}</div>` : ''}
           </div>
           <div class="main">
-            ${isSectionVisible('summary') && resumeData.summary ? `<div class="section"><div class="section-title">Summary</div><div class="plain-text">${resumeData.summary}</div></div>` : ''}
-            ${isSectionVisible('experience') && resumeData.experience?.length ? `<div class="section"><div class="section-title">Experience</div>${resumeData.experience.map(exp => `<div class="experience-item"><div class="exp-header"><span>${exp.company || ''}</span><span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' to ')}</span></div><div class="exp-company">${exp.position || ''}${exp.location ? `, ${exp.location}` : ''}</div>${exp.url ? `<div class="plain-text">${exp.url}</div>` : ''}${exp.bullets?.filter(b => b).map(b => `<div class="bullet">• ${b}</div>`).join('') || ''}</div>`).join('')}</div>` : ''}
-            ${isSectionVisible('education') && resumeData.education?.length ? `<div class="section"><div class="section-title">Education</div>${resumeData.education.map(edu => `<div class="experience-item"><div class="exp-header"><span>${edu.school || ''}</span><span class="exp-date">${edu.graduationDate || ''}</span></div><div class="exp-company">${edu.degree || ''}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
-            ${isSectionVisible('projects') && resumeData.projects?.length ? `<div class="section"><div class="section-title">Projects</div>${resumeData.projects.map(project => `<div class="experience-item"><div class="exp-company">${project.name || ''}</div><div class="plain-text">${project.role || ''}</div><div class="plain-text">${project.description || ''}</div></div>`).join('')}</div>` : ''}
+            ${isSectionVisible('summary', data) ? `<div class="section"><div class="section-title">Summary</div><div class="plain-text">${data.summary}</div></div>` : ''}
+            ${isSectionVisible('experience', data) ? `<div class="section"><div class="section-title">Experience</div>${data.experience.map(exp => `<div class="experience-item"><div class="exp-header"><span>${exp.company || ''}</span><span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' to ')}</span></div><div class="exp-company">${exp.position || ''}${exp.location ? `, ${exp.location}` : ''}</div>${exp.url ? `<div class="plain-text">${exp.url}</div>` : ''}${exp.bullets.map(b => `<div class="bullet">• ${b}</div>`).join('')}</div>`).join('')}</div>` : ''}
+            ${isSectionVisible('education', data) ? `<div class="section"><div class="section-title">Education</div>${data.education.map(edu => `<div class="experience-item"><div class="exp-header"><span>${edu.school || ''}</span><span class="exp-date">${edu.graduationDate || ''}</span></div><div class="exp-company">${edu.degree || ''}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
+            ${isSectionVisible('projects', data) ? `<div class="section"><div class="section-title">Projects</div>${data.projects.map(project => `<div class="experience-item"><div class="exp-company">${project.name || ''}</div><div class="plain-text">${project.role || ''}</div><div class="plain-text">${project.description || ''}</div></div>`).join('')}</div>` : ''}
           </div>
         `;
 
@@ -534,7 +614,7 @@
       }
       
       if (currentTemplate === 'gengar') {
-        const photoUrl = resumeData.basics?.profilePhoto || resumeData.basics?.photo || '';
+        const photoUrl = data.basics?.profilePhoto || data.basics?.photo || '';
         
         // Skill level mapping
         const skillLevels = { beginner: 25, intermediate: 50, advanced: 75, expert: 100 };
@@ -543,58 +623,58 @@
           <div class="sidebar">
             <div class="photo">${photoUrl ? `<img src="${photoUrl}" alt="Profile photo">` : ''}</div>
             
-            ${resumeData.basics?.name ? `<div class="name">${resumeData.basics.name}</div>` : ''}
-            ${resumeData.basics?.headline ? `<div class="title">${resumeData.basics.headline}</div>` : ''}
-            ${resumeData.basics?.location ? `<div class="location">📍 ${resumeData.basics.location}</div>` : ''}
+            ${data.basics?.name ? `<div class="name">${data.basics.name}</div>` : ''}
+            ${data.basics?.headline ? `<div class="title">${data.basics.headline}</div>` : ''}
+            ${data.basics?.location ? `<div class="location">📍 ${data.basics.location}</div>` : ''}
 
             <div class="sidebar-section">
               <div class="sidebar-title">Contact</div>
-              ${resumeData.basics?.email ? `<div class="sidebar-item"><div class="sidebar-item-label">Email</div>${resumeData.basics.email}</div>` : ''}
-              ${resumeData.basics?.phone ? `<div class="sidebar-item"><div class="sidebar-item-label">Phone</div>${resumeData.basics.phone}</div>` : ''}
-              ${resumeData.basics?.url ? `<div class="sidebar-item"><div class="sidebar-item-label">Website</div>${resumeData.basics.url}</div>` : ''}
+              ${data.basics?.email ? `<div class="sidebar-item"><div class="sidebar-item-label">Email</div>${data.basics.email}</div>` : ''}
+              ${data.basics?.phone ? `<div class="sidebar-item"><div class="sidebar-item-label">Phone</div>${data.basics.phone}</div>` : ''}
+              ${data.basics?.url ? `<div class="sidebar-item"><div class="sidebar-item-label">Website</div>${data.basics.url}</div>` : ''}
             </div>
 
-            ${(resumeData.basics?.linkedIn || resumeData.basics?.github) ? `
+            ${(data.basics?.linkedIn || data.basics?.github) ? `
               <div class="sidebar-section">
                 <div class="sidebar-title">Profiles</div>
                 <div class="social-links">
-                  ${resumeData.basics?.linkedIn ? `<div class="social-link"><i class="fab fa-linkedin"></i> LinkedIn</div>` : ''}
-                  ${resumeData.basics?.github ? `<div class="social-link"><i class="fab fa-github"></i> GitHub</div>` : ''}
+                  ${data.basics?.linkedIn ? `<div class="social-link"><i class="fab fa-linkedin"></i> LinkedIn</div>` : ''}
+                  ${data.basics?.github ? `<div class="social-link"><i class="fab fa-github"></i> GitHub</div>` : ''}
                 </div>
               </div>
             ` : ''}
 
-            ${isSectionVisible('skills') && resumeData.skills?.length ? `
+            ${isSectionVisible('skills', data) ? `
               <div class="sidebar-section">
                 <div class="sidebar-title">Technical Skills</div>
-                ${resumeData.skills.slice(0, 8).map(s => {
+                ${data.skills.slice(0, 8).map(s => {
                   const level = skillLevels[s.proficiency?.toLowerCase()] || 50;
                   return `<div class="skill-item"><div class="skill-name">${s.name}</div><div class="skill-bar"><div class="skill-bar-fill" style="width: ${level}%"></div></div></div>`;
                 }).join('')}
               </div>
             ` : ''}
 
-            ${isSectionVisible('languages') && resumeData.languages?.length ? `
+            ${isSectionVisible('languages', data) ? `
               <div class="sidebar-section">
                 <div class="sidebar-title">Languages</div>
-                ${resumeData.languages.map(lang => `<div class="sidebar-item"><strong>${lang.name}</strong> - ${lang.proficiency}</div>`).join('')}
+                ${data.languages.map(lang => `<div class="sidebar-item"><strong>${lang.name}</strong>${lang.proficiency ? ` - ${lang.proficiency}` : ''}</div>`).join('')}
               </div>
             ` : ''}
           </div>
           
           <div class="main">
             <div class="header">
-              ${resumeData.basics?.name ? `<div class="name">${resumeData.basics.name}</div>` : ''}
-              ${resumeData.basics?.headline ? `<div class="title">${resumeData.basics.headline}</div>` : ''}
+              ${data.basics?.name ? `<div class="name">${data.basics.name}</div>` : ''}
+              ${data.basics?.headline ? `<div class="title">${data.basics.headline}</div>` : ''}
             </div>
             
-            ${isSectionVisible('summary') && resumeData.summary ? `<div class="section"><div class="section-title">Professional Summary</div><div class="summary-text">${resumeData.summary}</div></div>` : ''}
+            ${isSectionVisible('summary', data) ? `<div class="section"><div class="section-title">Professional Summary</div><div class="summary-text">${data.summary}</div></div>` : ''}
             
-            ${isSectionVisible('experience') && resumeData.experience?.length ? `<div class="section"><div class="section-title">Experience</div>${resumeData.experience.map(exp => `<div class="experience-item"><div class="exp-header"><span>${exp.position}</span><span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' - ')}</span></div><div class="exp-company">${exp.company}${exp.location ? `, ${exp.location}` : ''}</div>${exp.bullets?.filter(b => b).map(b => `<div class="bullet">• ${b}</div>`).join('') || ''}</div>`).join('')}</div>` : ''}
+            ${isSectionVisible('experience', data) ? `<div class="section"><div class="section-title">Experience</div>${data.experience.map(exp => `<div class="experience-item"><div class="exp-header"><span>${exp.position || ''}</span><span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' - ')}</span></div><div class="exp-company">${exp.company || ''}${exp.location ? `, ${exp.location}` : ''}</div>${exp.bullets.map(b => `<div class="bullet">• ${b}</div>`).join('')}</div>`).join('')}</div>` : ''}
             
-            ${isSectionVisible('education') && resumeData.education?.length ? `<div class="section"><div class="section-title">Education</div>${resumeData.education.map(edu => `<div class="experience-item"><div class="exp-header"><span>${edu.school}</span><span class="exp-date">${edu.graduationDate}</span></div><div class="exp-company">${edu.degree}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
+            ${isSectionVisible('education', data) ? `<div class="section"><div class="section-title">Education</div>${data.education.map(edu => `<div class="experience-item"><div class="exp-header"><span>${edu.school || ''}</span><span class="exp-date">${edu.graduationDate || ''}</span></div><div class="exp-company">${edu.degree || ''}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
             
-            ${isSectionVisible('certifications') && resumeData.certifications?.length ? `<div class="section"><div class="section-title">Certifications</div>${resumeData.certifications.map(cert => `<div class="experience-item"><div class="exp-header"><span>${cert.name}</span><span class="exp-date">${cert.date}</span></div><div class="exp-company">${cert.issuer}</div></div>`).join('')}</div>` : ''}
+            ${isSectionVisible('certifications', data) ? `<div class="section"><div class="section-title">Certifications</div>${data.certifications.map(cert => `<div class="experience-item"><div class="exp-header"><span>${cert.name || ''}</span><span class="exp-date">${cert.date || ''}</span></div><div class="exp-company">${cert.issuer || ''}</div></div>`).join('')}</div>` : ''}
           </div>
         `;
 
@@ -611,30 +691,30 @@
       html += `
         <div class="header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px;">
           <div style="flex:1;">
-            ${resumeData.basics?.name ? `<div class="name">${resumeData.basics.name}</div>` : ''}
-            ${resumeData.basics?.headline ? `<div class="title">${resumeData.basics.headline}</div>` : ''}
+            ${data.basics?.name ? `<div class="name">${data.basics.name}</div>` : ''}
+            ${data.basics?.headline ? `<div class="title">${data.basics.headline}</div>` : ''}
             <div class="contact">
               ${[
-                resumeData.basics?.email,
-                resumeData.basics?.phone,
-                resumeData.basics?.location,
-                resumeData.basics?.linkedIn ? 'LinkedIn' : ''
+                data.basics?.email,
+                data.basics?.phone,
+                data.basics?.location,
+                data.basics?.linkedIn ? 'LinkedIn' : ''
               ].filter(Boolean).join(' | ')}
             </div>
-            ${(resumeData.basics?.dateOfBirth || resumeData.basics?.nationality) ? `
+            ${(data.basics?.dateOfBirth || data.basics?.nationality) ? `
               <div class="contact" style="margin-top:8px;">
                 ${[
-                  resumeData.basics?.dateOfBirth ? `Date of Birth: ${resumeData.basics.dateOfBirth}` : '',
-                  resumeData.basics?.nationality ? `Nationality: ${resumeData.basics.nationality}` : ''
+                  data.basics?.dateOfBirth ? `Date of Birth: ${data.basics.dateOfBirth}` : '',
+                  data.basics?.nationality ? `Nationality: ${data.basics.nationality}` : ''
                 ].filter(Boolean).join(' | ')}
               </div>
             ` : ''}
           </div>
-          ${resumeData.basics?.profilePhoto ? `<div style="width:96px; height:96px; border-radius:12px; overflow:hidden; flex-shrink:0; border:1px solid rgba(0,0,0,0.08);"><img src="${resumeData.basics.profilePhoto}" alt="Profile photo" style="width:100%; height:100%; object-fit:cover; display:block;"></div>` : ''}
+          ${data.basics?.profilePhoto ? `<div style="width:96px; height:96px; border-radius:12px; overflow:hidden; flex-shrink:0; border:1px solid rgba(0,0,0,0.08);"><img src="${data.basics.profilePhoto}" alt="Profile photo" style="width:100%; height:100%; object-fit:cover; display:block;"></div>` : ''}
         </div>
       `;
 
-      html += renderOrderedSections();
+      html += renderOrderedSections(data);
       
       if (!embedMode && (currentUser?.subscription_tier || 'free') === 'free') {
         html += '<div class="pdf-watermark">cvmaker.ink</div>';
@@ -674,6 +754,12 @@
     }
 
     async function ensurePdfEngines() {
+      if (!window.html2pdf) {
+        await loadScriptOnce(
+          'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
+          () => !!window.html2pdf
+        );
+      }
       if (!window.html2canvas) {
         await loadScriptOnce(
           'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
@@ -688,6 +774,9 @@
       }
       if (!window.html2canvas) {
         throw new Error('Canvas renderer is not available');
+      }
+      if (!window.html2pdf) {
+        throw new Error('PDF exporter is not available');
       }
       if (!(window.jspdf?.jsPDF || window.jsPDF)) {
         throw new Error('PDF engine is not available');
@@ -734,51 +823,30 @@
       }
       await waitForImages(element);
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
-        logging: false,
-        width: PDF_PAGE.widthPx,
-        windowWidth: PDF_PAGE.widthPx,
-        scrollX: 0,
-        scrollY: 0
-      });
-
-      const JsPDF = window.jspdf?.jsPDF || window.jsPDF;
-      if (!JsPDF) {
-        throw new Error('PDF engine is not available');
-      }
-
-      const pdf = new JsPDF('p', 'mm', 'a4');
-      const pageHeightPx = Math.floor(canvas.width * PDF_PAGE.heightMm / PDF_PAGE.widthMm);
-      let pageIndex = 0;
-
-      for (let y = 0; y < canvas.height; y += pageHeightPx) {
-        const sliceHeight = Math.min(pageHeightPx, canvas.height - y);
-        if (pageIndex > 0 && isCanvasAreaBlank(canvas, y, sliceHeight)) {
-          continue;
-        }
-
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sliceHeight;
-        const pageCtx = pageCanvas.getContext('2d');
-        pageCtx.fillStyle = '#ffffff';
-        pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-        pageCtx.drawImage(canvas, 0, y, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
-
-        if (pageIndex > 0) {
-          pdf.addPage('a4', 'portrait');
-        }
-
-        const imgHeightMm = sliceHeight * PDF_PAGE.widthMm / canvas.width;
-        pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.98), 'JPEG', 0, 0, PDF_PAGE.widthMm, imgHeightMm);
-        pageIndex += 1;
-      }
-
-      pdf.save(filename);
+      await html2pdf()
+        .set({
+          margin: 0,
+          filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: '#ffffff',
+            logging: false,
+            width: PDF_PAGE.widthPx,
+            windowWidth: PDF_PAGE.widthPx,
+            scrollX: 0,
+            scrollY: 0
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: {
+            mode: ['css', 'legacy'],
+            avoid: ['.header', '.section-title', '.experience-item', '.bullet', '.skills-list', '.sidebar-card', '.sidebar-section']
+          }
+        })
+        .from(element)
+        .save();
     }
 
     async function downloadPDF(autoTriggered = false) {
