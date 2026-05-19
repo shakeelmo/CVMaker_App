@@ -1953,6 +1953,55 @@
       }
     }
 
+    function getResumeAuthHeaders(includeContentType = true) {
+      const headers = {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      };
+      if (includeContentType) {
+        headers['Content-Type'] = 'application/json';
+      }
+      return headers;
+    }
+
+    async function parseJsonResponse(response) {
+      return await response.json().catch(() => ({}));
+    }
+
+    async function updateExistingResume(resumeId, payload) {
+      const response = await fetch(`/api/resumes/${resumeId}`, {
+        method: 'PUT',
+        headers: getResumeAuthHeaders(),
+        body: JSON.stringify(payload)
+      });
+      const data = await parseJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Save failed');
+      }
+
+      return { ...data, id: Number(resumeId) || resumeId };
+    }
+
+    async function getResumeIdForCreateFallback() {
+      const response = await fetch('/api/resumes', {
+        headers: getResumeAuthHeaders(false)
+      });
+      const data = await parseJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not load your existing resumes.');
+      }
+
+      const resumes = Array.isArray(data.resumes) ? data.resumes : [];
+      if (resumes.length === 1) {
+        return resumes[0].id;
+      }
+      if (resumes.length > 1) {
+        throw new Error('Please open the resume you want to edit from Dashboard, then save again.');
+      }
+      return null;
+    }
+
     async function persistResume() {
       const params = new URLSearchParams(window.location.search);
       const resumeId = params.get('id');
@@ -1963,18 +2012,29 @@
         template_id: params.get('template') || 1
       };
 
-      const response = await fetch(resumeId ? `/api/resumes/${resumeId}` : '/api/resumes', {
-        method: resumeId ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+      if (resumeId) {
+        return await updateExistingResume(resumeId, payload);
+      }
+
+      const response = await fetch('/api/resumes', {
+        method: 'POST',
+        headers: getResumeAuthHeaders(),
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json().catch(() => ({}));
+      const data = await parseJsonResponse(response);
 
       if (!response.ok) {
+        const resumeLimitHit = data.upgrade_required || /limited/i.test(data.error || '');
+        if (resumeLimitHit) {
+          const existingResumeId = await getResumeIdForCreateFallback();
+          if (existingResumeId) {
+            const updated = await updateExistingResume(existingResumeId, payload);
+            window.history.replaceState({}, '', `/builder.html?id=${existingResumeId}`);
+            return { ...updated, id: existingResumeId, reused_existing: true };
+          }
+        }
+
         if (data.upgrade_required) {
           showUpgradeModal(data.error || 'This feature requires a Pro plan.');
           throw new Error('__UPGRADE__');
@@ -2002,14 +2062,14 @@
         const resumeId = params.get('id');
         const data = await persistResume();
 
-        alert('Resume saved successfully!');
+        alert(data.reused_existing ? 'Saved into your existing resume successfully.' : 'Resume saved successfully!');
         if (!resumeId && data.id) {
           window.location.href = `/builder.html?id=${data.id}`;
         }
       } catch (err) {
         if (err.message === '__UPGRADE__') return; // already shown modal
         console.error('Save error:', err);
-        alert('Failed to save resume. Please try again.');
+        alert(err.message || 'Failed to save resume. Please try again.');
       } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
