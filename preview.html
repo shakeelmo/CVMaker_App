@@ -47,10 +47,11 @@
     }
     .resume-container .header,
     .resume-container .section-title,
-    .resume-container .experience-item,
     .resume-container .bullet,
     .resume-container .skills-list,
     .resume-container .skill-tag,
+    .resume-container .section--compact,
+    .resume-container .resume-entry-avoid,
     .resume-container .sidebar-card,
     .resume-container .sidebar-section {
       break-inside: avoid;
@@ -79,20 +80,9 @@
       transform-origin: top center;
       box-shadow: none;
     }
-    .pdf-export-root {
-      position: fixed;
-      left: -10000px;
-      top: 0;
-      width: 794px;
-      background: #fff;
-      z-index: 999999;
-      pointer-events: none;
-    }
-    .pdf-export-root .resume-container {
+    .resume-container.pdf-export-source {
       width: 794px !important;
       min-height: 1123px !important;
-      margin: 0 !important;
-      padding-bottom: 64px !important;
       box-shadow: none !important;
       transform: none !important;
       overflow: visible !important;
@@ -483,7 +473,7 @@
           </div>
         ` : '',
         skills: () => data.skills.length ? `
-          <div class="section">
+          <div class="section section--compact">
             <div class="section-title">Skills</div>
             <div class="skills-list">
               ${data.skills.map(s => `<span class="skill-tag">${s.name}</span>`).join('')}
@@ -506,10 +496,10 @@
           </div>
         ` : '',
         education: () => data.education.length ? `
-          <div class="section">
+          <div class="section section--compact">
             <div class="section-title">Education</div>
             ${data.education.map(edu => `
-              <div class="experience-item">
+              <div class="experience-item resume-entry-avoid">
                 <div class="exp-header">
                   <span>${edu.school || ''}</span>
                   <span class="exp-date">${edu.graduationDate || ''}</span>
@@ -520,11 +510,11 @@
           </div>
         ` : '',
         certifications: () => data.certifications.length ? `
-          <div class="section">
+          <div class="section section--compact">
             <div class="section-title">Certifications</div>
             ${data.certifications.map(cert => {
               const meta = [cert.issuer, cert.date].filter(Boolean).join(' • ');
-              return `<div class="bullet"><strong>${cert.name || ''}</strong>${meta ? ` - ${meta}` : ''}</div>`;
+              return `<div class="bullet resume-entry-avoid"><strong>${cert.name || ''}</strong>${meta ? ` - ${meta}` : ''}</div>`;
             }).join('')}
           </div>
         ` : '',
@@ -532,7 +522,7 @@
           <div class="section">
             <div class="section-title">Projects</div>
             ${data.projects.map(project => `
-              <div class="experience-item">
+              <div class="experience-item resume-entry-avoid">
                 <div class="exp-header">
                   <span>${project.name || ''}</span>
                   <span class="exp-date">${project.technologies || ''}</span>
@@ -544,7 +534,7 @@
           </div>
         ` : '',
         languages: () => data.languages.length ? `
-          <div class="section">
+          <div class="section section--compact">
             <div class="section-title">Languages</div>
             <div class="skills-list">
               ${data.languages.map(l => `<span class="skill-tag">${l.name}${l.proficiency ? ` (${l.proficiency})` : ''}</span>`).join('')}
@@ -599,8 +589,8 @@
           <div class="main">
             ${isSectionVisible('summary', data) ? `<div class="section"><div class="section-title">Summary</div><div class="plain-text">${data.summary}</div></div>` : ''}
             ${isSectionVisible('experience', data) ? `<div class="section"><div class="section-title">Experience</div>${data.experience.map(exp => `<div class="experience-item"><div class="exp-header"><span>${exp.company || ''}</span><span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' to ')}</span></div><div class="exp-company">${exp.position || ''}${exp.location ? `, ${exp.location}` : ''}</div>${exp.url ? `<div class="plain-text">${exp.url}</div>` : ''}${exp.bullets.map(b => `<div class="bullet">• ${b}</div>`).join('')}</div>`).join('')}</div>` : ''}
-            ${isSectionVisible('education', data) ? `<div class="section"><div class="section-title">Education</div>${data.education.map(edu => `<div class="experience-item"><div class="exp-header"><span>${edu.school || ''}</span><span class="exp-date">${edu.graduationDate || ''}</span></div><div class="exp-company">${edu.degree || ''}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
-            ${isSectionVisible('projects', data) ? `<div class="section"><div class="section-title">Projects</div>${data.projects.map(project => `<div class="experience-item"><div class="exp-company">${project.name || ''}</div><div class="plain-text">${project.role || ''}</div><div class="plain-text">${project.description || ''}</div></div>`).join('')}</div>` : ''}
+            ${isSectionVisible('education', data) ? `<div class="section section--compact"><div class="section-title">Education</div>${data.education.map(edu => `<div class="experience-item resume-entry-avoid"><div class="exp-header"><span>${edu.school || ''}</span><span class="exp-date">${edu.graduationDate || ''}</span></div><div class="exp-company">${edu.degree || ''}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
+            ${isSectionVisible('projects', data) ? `<div class="section"><div class="section-title">Projects</div>${data.projects.map(project => `<div class="experience-item resume-entry-avoid"><div class="exp-company">${project.name || ''}</div><div class="plain-text">${project.role || ''}</div><div class="plain-text">${project.description || ''}</div></div>`).join('')}</div>` : ''}
           </div>
         `;
 
@@ -672,9 +662,9 @@
             
             ${isSectionVisible('experience', data) ? `<div class="section"><div class="section-title">Experience</div>${data.experience.map(exp => `<div class="experience-item"><div class="exp-header"><span>${exp.position || ''}</span><span class="exp-date">${[exp.startDate, exp.endDate || 'Present'].filter(Boolean).join(' - ')}</span></div><div class="exp-company">${exp.company || ''}${exp.location ? `, ${exp.location}` : ''}</div>${exp.bullets.map(b => `<div class="bullet">• ${b}</div>`).join('')}</div>`).join('')}</div>` : ''}
             
-            ${isSectionVisible('education', data) ? `<div class="section"><div class="section-title">Education</div>${data.education.map(edu => `<div class="experience-item"><div class="exp-header"><span>${edu.school || ''}</span><span class="exp-date">${edu.graduationDate || ''}</span></div><div class="exp-company">${edu.degree || ''}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
+            ${isSectionVisible('education', data) ? `<div class="section section--compact"><div class="section-title">Education</div>${data.education.map(edu => `<div class="experience-item resume-entry-avoid"><div class="exp-header"><span>${edu.school || ''}</span><span class="exp-date">${edu.graduationDate || ''}</span></div><div class="exp-company">${edu.degree || ''}${edu.field ? `, ${edu.field}` : ''}</div></div>`).join('')}</div>` : ''}
             
-            ${isSectionVisible('certifications', data) ? `<div class="section"><div class="section-title">Certifications</div>${data.certifications.map(cert => `<div class="experience-item"><div class="exp-header"><span>${cert.name || ''}</span><span class="exp-date">${cert.date || ''}</span></div><div class="exp-company">${cert.issuer || ''}</div></div>`).join('')}</div>` : ''}
+            ${isSectionVisible('certifications', data) ? `<div class="section section--compact"><div class="section-title">Certifications</div>${data.certifications.map(cert => `<div class="experience-item resume-entry-avoid"><div class="exp-header"><span>${cert.name || ''}</span><span class="exp-date">${cert.date || ''}</span></div><div class="exp-company">${cert.issuer || ''}</div></div>`).join('')}</div>` : ''}
           </div>
         `;
 
@@ -783,22 +773,6 @@
       }
     }
 
-    function createPdfExportElement() {
-      const source = document.getElementById('resume');
-      const root = document.createElement('div');
-      const clone = source.cloneNode(true);
-      root.className = 'pdf-export-root';
-      clone.id = 'resumePdfExport';
-      clone.style.width = `${PDF_PAGE.widthPx}px`;
-      clone.style.minHeight = `${PDF_PAGE.heightPx}px`;
-      clone.style.margin = '0';
-      clone.style.boxShadow = 'none';
-      clone.style.transform = 'none';
-      root.appendChild(clone);
-      document.body.appendChild(root);
-      return { root, clone };
-    }
-
     function isCanvasAreaBlank(canvas, y, height) {
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       const sampleStep = 18;
@@ -825,7 +799,7 @@
 
       await html2pdf()
         .set({
-          margin: 0,
+          margin: [8, 0, 10, 0],
           filename,
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: {
@@ -833,16 +807,12 @@
             useCORS: true,
             allowTaint: false,
             backgroundColor: '#ffffff',
-            logging: false,
-            width: PDF_PAGE.widthPx,
-            windowWidth: PDF_PAGE.widthPx,
-            scrollX: 0,
-            scrollY: 0
+            logging: false
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: {
             mode: ['css', 'legacy'],
-            avoid: ['.header', '.section-title', '.experience-item', '.bullet', '.skills-list', '.sidebar-card', '.sidebar-section']
+            avoid: ['.header', '.section-title', '.section--compact', '.resume-entry-avoid', '.exp-header', '.exp-company', '.bullet', '.skills-list', '.sidebar-card', '.sidebar-section']
           }
         })
         .from(element)
@@ -871,9 +841,9 @@
         }
         alert('PDF generation is taking too long. Please use Print → Save as PDF instead.');
       }, 20000);
-      const { root, clone } = createPdfExportElement();
+      element.classList.add('pdf-export-source');
 
-      saveElementAsPDF(clone, filename).then(() => {
+      saveElementAsPDF(element, filename).then(() => {
         if (finished) return;
         finished = true;
         clearTimeout(timeoutId);
@@ -896,7 +866,7 @@
           btn.disabled = false;
         }
       }).finally(() => {
-        root.remove();
+        element.classList.remove('pdf-export-source');
       });
     }
   </script>
