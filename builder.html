@@ -140,7 +140,7 @@
     #autosaveStatus.save-error{color:#dc2626;cursor:pointer}
     .builder-shell { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
     .builder-panel { min-width: 0; }
-    .preview-frame { width: 100%; min-height: 1100px; border: 0; background: white; }
+    .preview-frame { width: 100%; height: 900px; min-height: 0; border: 0; background: white; }
     .mobile-preview-toggle button.active { background:#2563eb; color:#fff; }
     @media (min-width: 1024px) {
       .builder-shell { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); align-items: start; }
@@ -745,6 +745,52 @@
           </button>
         </div>
       </div>
+
+      <div class="section-card">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-lg font-semibold"><i class="fas fa-briefcase mr-2 text-blue-600"></i>Career Toolkit</h2>
+            <p class="text-sm text-gray-500 mt-1">Job-tailoring helpers inspired by modern resume builders, built into your existing CV flow.</p>
+          </div>
+          <button type="button" onclick="showJobMatcher()" class="btn-secondary text-sm">
+            <i class="fas fa-search"></i> Match Job
+          </button>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="p-4 border rounded-lg">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Content Strength</h3>
+              <span id="contentStrengthScore" class="text-sm font-bold text-blue-600">0%</span>
+            </div>
+            <div id="contentStrengthList" class="space-y-2 text-sm"></div>
+          </div>
+
+          <div class="p-4 border rounded-lg">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Skills Gap Finder</h3>
+              <button type="button" onclick="suggestKeywords()" class="text-sm text-blue-600 hover:underline">Paste job description</button>
+            </div>
+            <div id="skillsGapList" class="flex flex-wrap gap-2 text-sm"></div>
+          </div>
+
+          <div class="p-4 border rounded-lg">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Bullet Suggestions</h3>
+              <button type="button" onclick="improveBulletPoints()" class="text-sm text-blue-600 hover:underline">Refresh</button>
+            </div>
+            <div id="bulletSuggestionList" class="space-y-2 text-sm"></div>
+          </div>
+
+          <div class="p-4 border rounded-lg">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Application Pack</h3>
+              <button type="button" onclick="openCoverLetterStarter()" class="text-sm text-blue-600 hover:underline">Open cover letter</button>
+            </div>
+            <div id="sectionAdvisorList" class="space-y-2 text-sm"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -940,6 +986,16 @@
         if (event.data?.type === 'preview-ready') {
           previewFrameReady = true;
           pushLivePreview();
+          return;
+        }
+        if (event.data?.type === 'preview-height') {
+          const liveFrame = document.getElementById('livePreviewFrame');
+          const mobileFrame = document.getElementById('mobilePreviewFrame');
+          [liveFrame, mobileFrame].forEach(frame => {
+            if (frame?.contentWindow === event.source && event.data.height) {
+              frame.style.height = `${Math.max(640, Math.ceil(event.data.height))}px`;
+            }
+          });
         }
       });
 
@@ -1224,9 +1280,9 @@
     }
 
     // Experience Management
-    function addExperience(data = null) {
-      const exp = Object.assign({
-        id: createEditorId(),
+    function createDefaultExperience(id = createEditorId()) {
+      return {
+        id,
         company: '',
         position: '',
         location: '',
@@ -1234,16 +1290,34 @@
         endDate: '',
         current: false,
         bullets: ['', '', '']
-      }, data || {});
-      const id = ensureEditorId(exp);
-      exp.id = id;
-      exp.bullets = Array.isArray(exp.bullets) && exp.bullets.length ? exp.bullets : ['', '', ''];
+      };
+    }
+
+    function normalizeExperienceItem(data = null) {
+      const source = data && typeof data === 'object' ? data : {};
+      const id = ensureEditorId(source);
+      const bullets = Array.isArray(source.bullets) && source.bullets.length
+        ? source.bullets.slice()
+        : ['', '', ''];
+
+      return {
+        ...createDefaultExperience(id),
+        ...source,
+        id,
+        bullets
+      };
+    }
+
+    function addExperience(data = null) {
+      const exp = normalizeExperienceItem(data);
+      if (data) Object.assign(data, exp);
+      const id = exp.id;
       
       const html = `
         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50" id="exp-${id}">
           <div class="flex justify-between mb-3">
             <span class="font-medium text-gray-700">Work Experience</span>
-            <button type="button" onclick="removeExperience(${id})" class="btn-danger">Remove</button>
+            <button onclick="removeExperience(${id})" class="btn-danger">Remove</button>
           </div>
           <div class="grid md:grid-cols-2 gap-3">
             <input type="text" class="field-input" placeholder="Company Name" value="${escapeHtml(exp.company)}" oninput="updateExperience(${id}, 'company', this.value)">
@@ -1261,11 +1335,11 @@
               <label class="field-label">Achievements (use bullet points)</label>
               ${exp.bullets.map((bullet, i) => `
                 <div class="flex gap-2 mb-2">
-                  <span class="text-gray-400 mt-2">•</span>
+                  <span class="text-gray-400 mt-2">&bull;</span>
                   <input type="text" class="field-input flex-1" placeholder="Achievement with metrics (e.g., Increased sales by 25%)" value="${escapeHtml(bullet)}" oninput="updateBullet(${id}, ${i}, this.value)">
                 </div>
               `).join('')}
-              <button type="button" onclick="addBullet(${id})" class="text-blue-600 text-sm mt-2 hover:underline">
+              <button onclick="addBullet(${id})" class="text-blue-600 text-sm mt-2 hover:underline">
                 <i class="fas fa-plus mr-1"></i>Add bullet point
               </button>
             </div>
@@ -1273,14 +1347,11 @@
         </div>
       `;
       
-      const list = document.getElementById('experienceList');
-      list.insertAdjacentHTML('beforeend', html);
-      const inserted = document.getElementById(`exp-${id}`);
+      document.getElementById('experienceList').insertAdjacentHTML('beforeend', html);
       if (!data) {
         resumeData.experience.push(exp);
         updateATSScore();
       }
-      return inserted;
     }
 
     function updateExperience(id, field, value) {
@@ -1298,20 +1369,11 @@
     function addBullet(expId) {
       const item = resumeData.experience.find(e => e.id == expId);
       if (item) {
-        item.bullets = Array.isArray(item.bullets) ? item.bullets : ['', '', ''];
         item.bullets.push('');
+        // Re-render just this section
         const el = document.getElementById(`exp-${expId}`);
-        if (el) {
-          const list = document.getElementById('experienceList');
-          const nextEl = el.nextElementSibling;
-          el.remove();
-          const inserted = addExperience(item);
-          if (nextEl && inserted) {
-            list.insertBefore(inserted, nextEl);
-          }
-        } else {
-          addExperience(item);
-        }
+        el.remove();
+        addExperience(item);
         updateATSScore();
       }
     }
@@ -1909,11 +1971,178 @@
           </div>
         `).join('');
       }
+      renderCareerToolkit();
     }
 
     // Quick Fix Functions
+    const actionVerbHints = ['Led', 'Built', 'Improved', 'Reduced', 'Delivered', 'Automated', 'Managed', 'Increased', 'Streamlined', 'Launched'];
+    const commonResumeWords = new Set(['with', 'from', 'that', 'this', 'will', 'your', 'have', 'their', 'they', 'them', 'role', 'work', 'team', 'able', 'must', 'plus', 'using', 'about', 'into', 'over', 'under', 'years', 'skills', 'experience']);
+
+    function getResumePlainText() {
+      return [
+        resumeData.title,
+        resumeData.basics?.headline,
+        resumeData.summary,
+        resumeData.target?.jobTitle,
+        ...(resumeData.skills || []).map(s => s.name || s),
+        ...(resumeData.experience || []).flatMap(exp => [
+          exp.company,
+          exp.position,
+          exp.location,
+          ...(exp.bullets || [])
+        ]),
+        ...(resumeData.education || []).flatMap(edu => [edu.school, edu.degree, edu.field]),
+        ...(resumeData.certifications || []).map(cert => cert.name || cert.title || ''),
+        ...(resumeData.projects || []).flatMap(project => [project.name, project.description])
+      ].filter(Boolean).join(' ').toLowerCase();
+    }
+
+    function getJobKeywords(limit = 12) {
+      const text = (resumeData.target?.jobDescription || document.getElementById('jobDescription')?.value || document.getElementById('matcherJobDesc')?.value || '').toLowerCase();
+      const words = text.match(/\b[a-z][a-z0-9+#.-]{3,}\b/g) || [];
+      const counts = {};
+      words.forEach(word => {
+        const normalized = word.replace(/[.,;:()]/g, '');
+        if (!normalized || commonResumeWords.has(normalized)) return;
+        counts[normalized] = (counts[normalized] || 0) + 1;
+      });
+      return Object.entries(counts)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([word]) => word)
+        .slice(0, limit);
+    }
+
+    function hasMetric(text) {
+      return /(\d+|%|\$|usd|sar|kpi|revenue|cost|time|hours|days|weeks|months)/i.test(text || '');
+    }
+
+    function startsWithActionVerb(text) {
+      const firstWord = String(text || '').trim().split(/\s+/)[0]?.toLowerCase();
+      return actionVerbHints.some(verb => verb.toLowerCase() === firstWord);
+    }
+
+    function getFilledBullets() {
+      return (resumeData.experience || []).flatMap(exp =>
+        (exp.bullets || [])
+          .map((bullet, index) => ({ exp, index, text: String(bullet || '').trim() }))
+          .filter(item => item.text)
+      );
+    }
+
+    function makeBulletSuggestion(item) {
+      const role = item.exp.position || resumeData.target.jobTitle || 'business outcomes';
+      const text = item.text.replace(/^[\u2022\-*\s]+/, '');
+      const verb = startsWithActionVerb(text) ? text.split(/\s+/)[0] : actionVerbHints[Math.abs(text.length) % actionVerbHints.length];
+      let remainder = startsWithActionVerb(text) ? text.split(/\s+/).slice(1).join(' ') : text;
+      remainder = remainder.replace(/^(handled|managed|worked on|responsible for|helped with)\s+/i, '');
+      const metricHint = hasMetric(text) ? '' : ' and add a measurable result such as percentage, cost, time, volume, or team size';
+      return `${verb} ${remainder || role} to improve ${role} outcomes${metricHint}`.trim();
+    }
+
+    function renderCareerToolkit() {
+      renderContentStrength();
+      renderSkillsGap();
+      renderBulletSuggestions();
+      renderSectionAdvisor();
+    }
+
+    function renderContentStrength() {
+      const checks = [
+        { ok: Boolean(resumeData.basics?.name && resumeData.basics?.email && resumeData.basics?.phone), label: 'Complete contact details' },
+        { ok: Boolean(resumeData.target?.jobTitle), label: 'Target job title set' },
+        { ok: String(resumeData.summary || '').length >= 120, label: 'Summary has enough depth' },
+        { ok: (resumeData.skills || []).length >= 8, label: '8 or more role-relevant skills' },
+        { ok: getFilledBullets().length >= 4, label: 'Strong achievement bullets' },
+        { ok: getFilledBullets().some(item => hasMetric(item.text)), label: 'At least one quantified result' }
+      ];
+      const score = Math.round((checks.filter(check => check.ok).length / checks.length) * 100);
+      const scoreEl = document.getElementById('contentStrengthScore');
+      const listEl = document.getElementById('contentStrengthList');
+      if (!scoreEl || !listEl) return;
+      scoreEl.textContent = `${score}%`;
+      listEl.innerHTML = checks.map(check => `
+        <div class="flex items-start gap-2 ${check.ok ? 'text-green-700' : 'text-gray-600'}">
+          <i class="fas ${check.ok ? 'fa-check-circle' : 'fa-circle'} mt-0.5"></i>
+          <span>${check.label}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderSkillsGap() {
+      const container = document.getElementById('skillsGapList');
+      if (!container) return;
+      const resumeText = getResumePlainText();
+      const missing = getJobKeywords(16).filter(keyword => !resumeText.includes(keyword));
+
+      if (!resumeData.target?.jobDescription && !document.getElementById('matcherJobDesc')?.value) {
+        container.innerHTML = '<span class="text-gray-500">Paste a job description to see missing keywords.</span>';
+        return;
+      }
+
+      if (!missing.length) {
+        container.innerHTML = '<span class="text-green-700"><i class="fas fa-check-circle mr-1"></i>Your resume already covers the top job keywords.</span>';
+        return;
+      }
+
+      container.innerHTML = missing.slice(0, 10).map(keyword => `
+        <button type="button" class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-100" onclick="addSuggestedKeyword('${escapeJs(keyword)}')">
+          ${escapeHtml(keyword)} +
+        </button>
+      `).join('');
+    }
+
+    function renderBulletSuggestions() {
+      const container = document.getElementById('bulletSuggestionList');
+      if (!container) return;
+      const weakBullets = getFilledBullets().filter(item => !startsWithActionVerb(item.text) || !hasMetric(item.text)).slice(0, 3);
+
+      if (!weakBullets.length) {
+        container.innerHTML = '<span class="text-green-700"><i class="fas fa-check-circle mr-1"></i>Your bullets already use action language and measurable results.</span>';
+        return;
+      }
+
+      container.innerHTML = weakBullets.map(item => `
+        <div class="p-3 bg-gray-50 rounded-lg">
+          <div class="text-gray-500 line-through">${escapeHtml(item.text)}</div>
+          <div class="font-medium text-gray-800 mt-1">${escapeHtml(makeBulletSuggestion(item))}</div>
+          <button type="button" class="text-blue-600 hover:underline mt-2" onclick="applyBulletSuggestion(${item.exp.id}, ${item.index})">Apply suggestion</button>
+        </div>
+      `).join('');
+    }
+
+    function renderSectionAdvisor() {
+      const container = document.getElementById('sectionAdvisorList');
+      if (!container) return;
+      const hasJobDescription = Boolean(resumeData.target?.jobDescription);
+      const hasProjects = (resumeData.projects || []).some(project => project.name || project.description);
+      const currentOrder = resumeData.settings?.sectionOrder || 'skills-first';
+      const recommendation = hasProjects
+        ? 'Keep Projects visible for portfolio-style roles.'
+        : currentOrder === 'skills-first'
+          ? 'Skills-first is good for ATS keyword scanning.'
+          : 'Experience-first is good for senior and leadership CVs.';
+      container.innerHTML = `
+        <div class="flex items-start gap-2 text-gray-700">
+          <i class="fas fa-layer-group text-blue-600 mt-0.5"></i>
+          <span>${recommendation}</span>
+        </div>
+        <div class="flex items-start gap-2 text-gray-700">
+          <i class="fas fa-envelope-open-text text-green-600 mt-0.5"></i>
+          <span>${hasJobDescription ? 'Use the same job description for a matching cover letter.' : 'Paste a job description before creating a tailored cover letter.'}</span>
+        </div>
+      `;
+    }
+
+    function escapeJs(value) {
+      return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
     function improveBulletPoints() {
-      alert('Feature: This would use AI to rewrite your bullet points with action verbs and metrics');
+      renderBulletSuggestions();
+      const firstApply = document.querySelector('#bulletSuggestionList button');
+      if (!firstApply) {
+        alert('Your current bullet points already look strong. Add more achievements if you want additional suggestions.');
+      }
     }
 
     function suggestKeywords() {
@@ -1933,6 +2162,37 @@
         summary.value = `Results-driven professional with expertise in ${resumeData.target.jobTitle || 'the field'}. Skilled in ${resumeData.skills.slice(0, 3).map(s => s.name).join(', ') || 'key areas'} with a proven track record of delivering impactful results.`;
         updateATSScore();
       }
+    }
+
+    function checkFormatting() {
+      const checks = [
+        'Using an ATS-safe font',
+        'Using standard resume sections',
+        'Keeping text in editable fields',
+        'Using bullet points for achievements',
+        `${resumeData.settings?.sectionOrder === 'skills-first' ? 'Skills-first order selected' : 'Experience-first order selected'}`
+      ];
+      alert(`Formatting Check:\n${checks.map(item => `- ${item}`).join('\n')}`);
+    }
+
+    function applyBulletSuggestion(expId, bulletIdx) {
+      const item = resumeData.experience.find(exp => exp.id == expId);
+      if (!item || !Array.isArray(item.bullets) || !item.bullets[bulletIdx]) return;
+      item.bullets[bulletIdx] = makeBulletSuggestion({ exp: item, index: bulletIdx, text: item.bullets[bulletIdx] });
+      const expEl = document.getElementById(`exp-${expId}`);
+      if (expEl) expEl.remove();
+      addExperience(item);
+      updateATSScore();
+      renderCareerToolkit();
+    }
+
+    function openCoverLetterStarter() {
+      persistResume().catch(() => null).finally(() => {
+        const params = new URLSearchParams();
+        if (resumeData.target?.jobTitle) params.set('role', resumeData.target.jobTitle);
+        if (resumeData.basics?.name) params.set('name', resumeData.basics.name);
+        window.open(`/cover-letter.html${params.toString() ? `?${params}` : ''}`, '_blank');
+      });
     }
 
     // Show ATS Check
@@ -1960,55 +2220,6 @@
       }
     }
 
-    function getResumeAuthHeaders(includeContentType = true) {
-      const headers = {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      };
-      if (includeContentType) {
-        headers['Content-Type'] = 'application/json';
-      }
-      return headers;
-    }
-
-    async function parseJsonResponse(response) {
-      return await response.json().catch(() => ({}));
-    }
-
-    async function updateExistingResume(resumeId, payload) {
-      const response = await fetch(`/api/resumes/${resumeId}`, {
-        method: 'PUT',
-        headers: getResumeAuthHeaders(),
-        body: JSON.stringify(payload)
-      });
-      const data = await parseJsonResponse(response);
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Save failed');
-      }
-
-      return { ...data, id: Number(resumeId) || resumeId };
-    }
-
-    async function getResumeIdForCreateFallback() {
-      const response = await fetch('/api/resumes', {
-        headers: getResumeAuthHeaders(false)
-      });
-      const data = await parseJsonResponse(response);
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Could not load your existing resumes.');
-      }
-
-      const resumes = Array.isArray(data.resumes) ? data.resumes : [];
-      if (resumes.length === 1) {
-        return resumes[0].id;
-      }
-      if (resumes.length > 1) {
-        throw new Error('Please open the resume you want to edit from Dashboard, then save again.');
-      }
-      return null;
-    }
-
     async function persistResume() {
       const params = new URLSearchParams(window.location.search);
       const resumeId = params.get('id');
@@ -2019,29 +2230,18 @@
         template_id: params.get('template') || 1
       };
 
-      if (resumeId) {
-        return await updateExistingResume(resumeId, payload);
-      }
-
-      const response = await fetch('/api/resumes', {
-        method: 'POST',
-        headers: getResumeAuthHeaders(),
+      const response = await fetch(resumeId ? `/api/resumes/${resumeId}` : '/api/resumes', {
+        method: resumeId ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify(payload)
       });
 
-      const data = await parseJsonResponse(response);
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        const resumeLimitHit = data.upgrade_required || /limited/i.test(data.error || '');
-        if (resumeLimitHit) {
-          const existingResumeId = await getResumeIdForCreateFallback();
-          if (existingResumeId) {
-            const updated = await updateExistingResume(existingResumeId, payload);
-            window.history.replaceState({}, '', `/builder.html?id=${existingResumeId}`);
-            return { ...updated, id: existingResumeId, reused_existing: true };
-          }
-        }
-
         if (data.upgrade_required) {
           showUpgradeModal(data.error || 'This feature requires a Pro plan.');
           throw new Error('__UPGRADE__');
@@ -2069,14 +2269,14 @@
         const resumeId = params.get('id');
         const data = await persistResume();
 
-        alert(data.reused_existing ? 'Saved into your existing resume successfully.' : 'Resume saved successfully!');
+        alert('Resume saved successfully!');
         if (!resumeId && data.id) {
           window.location.href = `/builder.html?id=${data.id}`;
         }
       } catch (err) {
         if (err.message === '__UPGRADE__') return; // already shown modal
         console.error('Save error:', err);
-        alert(err.message || 'Failed to save resume. Please try again.');
+        alert('Failed to save resume. Please try again.');
       } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
