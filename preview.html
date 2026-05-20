@@ -87,6 +87,13 @@
       transform: none !important;
       overflow: visible !important;
     }
+    .resume-container .pdf-page-spacer {
+      display: block;
+      width: 100%;
+      break-after: auto;
+      page-break-after: auto;
+      pointer-events: none;
+    }
     .pdf-watermark {
       position: absolute;
       left: 0;
@@ -717,6 +724,8 @@
     const PDF_PAGE = {
       widthMm: 210,
       heightMm: 297,
+      topMarginMm: 8,
+      bottomMarginMm: 10,
       widthPx: 794,
       heightPx: 1123
     };
@@ -790,16 +799,86 @@
       return true;
     }
 
+    function removePdfPaginationSpacers(element) {
+      element.querySelectorAll('.pdf-page-spacer').forEach(spacer => spacer.remove());
+    }
+
+    function getPdfContentPageHeightPx(element) {
+      const width = element.getBoundingClientRect().width || PDF_PAGE.widthPx;
+      const usableHeightMm = PDF_PAGE.heightMm - PDF_PAGE.topMarginMm - PDF_PAGE.bottomMarginMm;
+      return Math.floor((usableHeightMm / PDF_PAGE.widthMm) * width);
+    }
+
+    function getElementOffsetTop(target, rootRect) {
+      const rect = target.getBoundingClientRect();
+      return rect.top - rootRect.top;
+    }
+
+    function needsPdfSpacer(target, rootRect, pageHeight) {
+      const top = getElementOffsetTop(target, rootRect);
+      const height = target.getBoundingClientRect().height;
+      if (height < 8 || height >= pageHeight * 0.9) return false;
+      const bottom = top + height;
+      const topPage = Math.floor(top / pageHeight);
+      const bottomPage = Math.floor((bottom - 1) / pageHeight);
+      if (topPage === bottomPage) return false;
+      const positionInPage = top - (topPage * pageHeight);
+      return positionInPage > 24;
+    }
+
+    function applyPdfPagination(element) {
+      removePdfPaginationSpacers(element);
+
+      const pageHeight = getPdfContentPageHeightPx(element);
+      const selector = [
+        '.section-title',
+        '.experience-item',
+        '.resume-entry-avoid',
+        '.bullet',
+        '.skills-list',
+        '.section--compact',
+        '.plain-text',
+        '.summary-text',
+        'p'
+      ].join(',');
+
+      for (let pass = 0; pass < 4; pass++) {
+        let inserted = false;
+        const rootRect = element.getBoundingClientRect();
+        const candidates = Array.from(element.querySelectorAll(selector))
+          .filter(node => !node.closest('.pdf-page-spacer'));
+
+        for (const candidate of candidates) {
+          if (candidate.previousElementSibling?.classList.contains('pdf-page-spacer')) continue;
+          if (!needsPdfSpacer(candidate, rootRect, pageHeight)) continue;
+
+          const top = getElementOffsetTop(candidate, rootRect);
+          const positionInPage = top % pageHeight;
+          const spacerHeight = Math.ceil(pageHeight - positionInPage + 10);
+          const spacer = document.createElement('div');
+          spacer.className = 'pdf-page-spacer';
+          spacer.style.height = `${spacerHeight}px`;
+          spacer.setAttribute('aria-hidden', 'true');
+          candidate.parentNode.insertBefore(spacer, candidate);
+          inserted = true;
+          break;
+        }
+
+        if (!inserted) break;
+      }
+    }
+
     async function saveElementAsPDF(element, filename) {
       await ensurePdfEngines();
       if (document.fonts?.ready) {
         await document.fonts.ready;
       }
       await waitForImages(element);
+      applyPdfPagination(element);
 
       await html2pdf()
         .set({
-          margin: [8, 0, 10, 0],
+          margin: [PDF_PAGE.topMarginMm, 0, PDF_PAGE.bottomMarginMm, 0],
           filename,
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: {
@@ -866,6 +945,7 @@
           btn.disabled = false;
         }
       }).finally(() => {
+        removePdfPaginationSpacers(element);
         element.classList.remove('pdf-export-source');
       });
     }
