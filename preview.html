@@ -846,42 +846,9 @@
 
     function applyPdfPagination(element) {
       removePdfPaginationSpacers(element);
-
-      const pageHeight = getPdfContentPageHeightPx(element);
-      // Only keep larger, semantic blocks together during export.
-      const selector = [
-        '.section-title',
-        '.resume-entry-avoid',
-        '.skills-list',
-        '.section--compact',
-        '.sidebar-card',
-        '.sidebar-section'
-      ].join(',');
-
-      for (let pass = 0; pass < 4; pass++) {
-        let inserted = false;
-        const rootRect = element.getBoundingClientRect();
-        const candidates = Array.from(element.querySelectorAll(selector))
-          .filter(node => !node.closest('.pdf-page-spacer'));
-
-        for (const candidate of candidates) {
-          if (candidate.previousElementSibling?.classList.contains('pdf-page-spacer')) continue;
-          if (!needsPdfSpacer(candidate, rootRect, pageHeight)) continue;
-
-          const top = getElementOffsetTop(candidate, rootRect);
-          const positionInPage = top % pageHeight;
-          const spacerHeight = Math.ceil(pageHeight - positionInPage);
-          const spacer = document.createElement('div');
-          spacer.className = 'pdf-page-spacer';
-          spacer.style.height = `${spacerHeight}px`;
-          spacer.setAttribute('aria-hidden', 'true');
-          candidate.parentNode.insertBefore(spacer, candidate);
-          inserted = true;
-          break;
-        }
-
-        if (!inserted) break;
-      }
+      // Let html2pdf paginate the rendered document naturally. The manual spacer
+      // approach was causing later sections such as education, certifications,
+      // projects, and languages to be pushed out of the exported output.
     }
 
     async function saveElementAsPDF(element, filename) {
@@ -907,7 +874,7 @@
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: {
             mode: ['css', 'legacy'],
-            avoid: ['.header', '.section-title', '.section--compact', '.resume-entry-avoid', '.exp-header', '.exp-company', '.skills-list', '.sidebar-card', '.sidebar-section']
+            avoid: ['.header', '.exp-header', '.sidebar-card', '.sidebar-section']
           }
         })
         .from(element)
