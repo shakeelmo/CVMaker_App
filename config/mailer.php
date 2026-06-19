@@ -63,6 +63,8 @@ function isEmailConfigured(PDO $pdo): bool {
 function sendEmail(PDO $pdo, string $to, string $subject, string $body, string $altBody = '', array $attachments = []): array {
     // Check if email is configured
     if (!isEmailConfigured($pdo)) {
+        // Keep failed configuration attempts visible in the admin email log.
+        logEmail($pdo, $to, $subject, 'failed', 'Email not configured or SMTP password could not be decrypted.');
         return [
             'success' => false,
             'message' => 'Email not configured. Please configure SMTP settings in admin dashboard.'
@@ -233,9 +235,19 @@ function logEmail(PDO $pdo, string $to, string $subject, string $status, string 
  */
 function getEmailLogs(PDO $pdo, int $limit = 50): array {
     try {
+        $timestampColumn = 'created_at';
+        try {
+            $columns = $pdo->query("DESCRIBE email_log")->fetchAll(PDO::FETCH_COLUMN);
+            if (in_array('sent_at', $columns, true)) {
+                $timestampColumn = 'sent_at';
+            }
+        } catch (PDOException $e) {
+            $timestampColumn = 'created_at';
+        }
+
         $stmt = $pdo->prepare("
             SELECT * FROM email_log 
-            ORDER BY sent_at DESC 
+            ORDER BY {$timestampColumn} DESC 
             LIMIT ?
         ");
         $stmt->execute([$limit]);

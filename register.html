@@ -135,14 +135,25 @@
           }
 
           registerForm.classList.add('hidden');
-          msgDiv.innerHTML = `
-            <div class="success">
-              <h3 class="font-bold text-lg mb-2"><i class="fas fa-check-circle mr-2"></i>Account Created!</h3>
-              <p>We've sent a verification email to <strong>${data.email}</strong>.</p>
-              <p class="mt-2">Please check your inbox and click the verification link to activate your account.</p>
-            </div>
-            <p class="text-sm text-gray-500 mt-3">Didn't receive the email? Check your spam folder or <a href="/login.html" class="text-blue-600 hover:text-blue-700">try signing in</a> to resend.</p>
-          `;
+          if (result.email_sent === false) {
+            msgDiv.innerHTML = `
+              <div class="error">
+                <h3 class="font-bold text-lg mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Account Created, Email Not Sent</h3>
+                <p>Your account was created for <strong>${data.email}</strong>, but the verification email could not be sent right now.</p>
+                <p class="mt-2">Please contact support or try resending the verification email from the verification page after email service is restored.</p>
+              </div>
+              <p class="text-sm text-gray-500 mt-3"><a href="/verify-email.html" class="text-blue-600 hover:text-blue-700">Open verification resend page</a></p>
+            `;
+          } else {
+            msgDiv.innerHTML = `
+              <div class="success">
+                <h3 class="font-bold text-lg mb-2"><i class="fas fa-check-circle mr-2"></i>Account Created!</h3>
+                <p>We've sent a verification email to <strong>${data.email}</strong>.</p>
+                <p class="mt-2">Please check your inbox and click the verification link to activate your account.</p>
+              </div>
+              <p class="text-sm text-gray-500 mt-3">Didn't receive the email? Check your spam folder or <a href="/login.html" class="text-blue-600 hover:text-blue-700">try signing in</a> to resend.</p>
+            `;
+          }
         } else {
           msgDiv.innerHTML = `<div class="error">❌ ${result.error || 'Registration failed'}</div>`;
           btn.textContent = 'Create Free Account';
