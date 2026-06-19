@@ -19,7 +19,7 @@
       background: white;
       box-shadow: 0 0 20px rgba(0,0,0,0.1);
       position: relative;
-      padding-bottom: 24mm;
+      padding-bottom: 14mm;
       box-sizing: border-box;
       overflow: visible;
     }
@@ -82,7 +82,8 @@
     }
     .resume-container.pdf-export-source {
       width: 794px !important;
-      min-height: 1123px !important;
+      min-height: auto !important;
+      padding-bottom: 10mm !important;
       box-shadow: none !important;
       transform: none !important;
       overflow: visible !important;
@@ -724,8 +725,8 @@
     const PDF_PAGE = {
       widthMm: 210,
       heightMm: 297,
-      topMarginMm: 8,
-      bottomMarginMm: 10,
+      topMarginMm: 0,
+      bottomMarginMm: 0,
       widthPx: 794,
       heightPx: 1123
     };
@@ -817,29 +818,28 @@
     function needsPdfSpacer(target, rootRect, pageHeight) {
       const top = getElementOffsetTop(target, rootRect);
       const height = target.getBoundingClientRect().height;
-      if (height < 8 || height >= pageHeight * 0.9) return false;
+      if (height < 18 || height >= pageHeight * 0.82) return false;
       const bottom = top + height;
       const topPage = Math.floor(top / pageHeight);
       const bottomPage = Math.floor((bottom - 1) / pageHeight);
       if (topPage === bottomPage) return false;
       const positionInPage = top - (topPage * pageHeight);
-      return positionInPage > 24;
+      return positionInPage > 72;
     }
 
     function applyPdfPagination(element) {
       removePdfPaginationSpacers(element);
 
       const pageHeight = getPdfContentPageHeightPx(element);
+      // Only keep larger, semantic blocks together during export.
       const selector = [
         '.section-title',
         '.experience-item',
         '.resume-entry-avoid',
-        '.bullet',
         '.skills-list',
         '.section--compact',
-        '.plain-text',
-        '.summary-text',
-        'p'
+        '.sidebar-card',
+        '.sidebar-section'
       ].join(',');
 
       for (let pass = 0; pass < 4; pass++) {
@@ -854,7 +854,7 @@
 
           const top = getElementOffsetTop(candidate, rootRect);
           const positionInPage = top % pageHeight;
-          const spacerHeight = Math.ceil(pageHeight - positionInPage + 10);
+          const spacerHeight = Math.ceil(pageHeight - positionInPage);
           const spacer = document.createElement('div');
           spacer.className = 'pdf-page-spacer';
           spacer.style.height = `${spacerHeight}px`;
@@ -891,7 +891,7 @@
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: {
             mode: ['css', 'legacy'],
-            avoid: ['.header', '.section-title', '.section--compact', '.resume-entry-avoid', '.exp-header', '.exp-company', '.bullet', '.skills-list', '.sidebar-card', '.sidebar-section']
+            avoid: ['.header', '.section-title', '.section--compact', '.resume-entry-avoid', '.experience-item', '.exp-header', '.exp-company', '.skills-list', '.sidebar-card', '.sidebar-section']
           }
         })
         .from(element)
