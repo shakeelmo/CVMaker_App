@@ -58,7 +58,9 @@ function uploadResumePhoto() {
 
     return [
         'message' => 'Photo uploaded successfully',
-        'url' => 'https://cvmaker.ink/uploads/photos/' . (int)$user['id'] . '/' . $filename
+        // Return a site-relative asset path so staging and production both render
+        // the uploaded image without cross-origin export issues.
+        'url' => '/uploads/photos/' . (int)$user['id'] . '/' . $filename
     ];
 }
 

@@ -1509,9 +1509,9 @@
 
     // Project Management
     function addProject(data = null) {
-      const proj = data || { id: createEditorId(), name: '', description: '', technologies: '', link: '' };
+      const proj = data || { id: createEditorId(), name: '', role: '', description: '', technologies: '', link: '' };
       const id = ensureEditorId(proj);
-      Object.assign(proj, { id, name: '', description: '', technologies: '', link: '' }, proj);
+      Object.assign(proj, { id, name: '', role: '', description: '', technologies: '', link: '' }, proj);
       
       const html = `
         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50" id="proj-${id}">
@@ -1522,6 +1522,7 @@
           <div class="grid md:grid-cols-2 gap-3">
             <input type="text" class="field-input" placeholder="Project Name" value="${escapeHtml(proj.name)}" oninput="updateProject(${id}, 'name', this.value)">
             <input type="text" class="field-input" placeholder="Technologies Used (comma separated)" value="${escapeHtml(proj.technologies)}" oninput="updateProject(${id}, 'technologies', this.value)">
+            <input type="text" class="field-input md:col-span-2" placeholder="Your Role / Contribution" value="${escapeHtml(proj.role)}" oninput="updateProject(${id}, 'role', this.value)">
             <input type="text" class="field-input md:col-span-2" placeholder="Project URL (GitHub, Live Demo, etc.)" value="${escapeHtml(proj.link)}" oninput="updateProject(${id}, 'link', this.value)">
             <textarea class="field-input md:col-span-2" rows="3" placeholder="Project description and your contributions" oninput="updateProject(${id}, 'description', this.value)">${escapeHtml(proj.description)}</textarea>
           </div>

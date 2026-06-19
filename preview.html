@@ -82,8 +82,8 @@
     }
     .resume-container.pdf-export-source {
       width: 794px !important;
-      min-height: auto !important;
-      padding-bottom: 10mm !important;
+      min-height: 1123px !important;
+      padding-bottom: 12mm !important;
       box-shadow: none !important;
       transform: none !important;
       overflow: visible !important;
@@ -417,6 +417,22 @@
       return value === null || value === undefined ? '' : String(value).trim();
     }
 
+    function normalizeAssetUrl(value) {
+      const raw = cleanText(value);
+      if (!raw || raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
+      if (raw.startsWith('/')) return raw;
+
+      try {
+        const parsed = new URL(raw, window.location.origin);
+        if (parsed.pathname.startsWith('/uploads/')) {
+          return `${window.location.origin}${parsed.pathname}`;
+        }
+        return parsed.toString();
+      } catch (err) {
+        return raw;
+      }
+    }
+
     function hasText(value) {
       return cleanText(value) !== '';
     }
@@ -535,6 +551,7 @@
                   <span>${project.name || ''}</span>
                   <span class="exp-date">${project.technologies || ''}</span>
                 </div>
+                ${project.role ? `<div class="exp-company">${project.role}</div>` : ''}
                 ${project.link ? `<div class="exp-company">${project.link}</div>` : ''}
                 ${project.description ? `<p>${project.description}</p>` : ''}
               </div>
@@ -572,7 +589,7 @@
       let html = '';
 
       if (currentTemplate === 'glalie') {
-        const photoUrl = data.basics?.profilePhoto || data.basics?.photo || '';
+        const photoUrl = normalizeAssetUrl(data.basics?.profilePhoto || data.basics?.photo || '');
         html += `
           <div class="sidebar">
             <div class="photo">${photoUrl ? `<img src="${photoUrl}" alt="Profile photo">` : ''}</div>
@@ -612,7 +629,7 @@
       }
       
       if (currentTemplate === 'gengar') {
-        const photoUrl = data.basics?.profilePhoto || data.basics?.photo || '';
+        const photoUrl = normalizeAssetUrl(data.basics?.profilePhoto || data.basics?.photo || '');
         
         // Skill level mapping
         const skillLevels = { beginner: 25, intermediate: 50, advanced: 75, expert: 100 };
@@ -708,7 +725,7 @@
               </div>
             ` : ''}
           </div>
-          ${data.basics?.profilePhoto ? `<div style="width:96px; height:96px; border-radius:12px; overflow:hidden; flex-shrink:0; border:1px solid rgba(0,0,0,0.08);"><img src="${data.basics.profilePhoto}" alt="Profile photo" style="width:100%; height:100%; object-fit:cover; display:block;"></div>` : ''}
+          ${normalizeAssetUrl(data.basics?.profilePhoto) ? `<div style="width:96px; height:96px; border-radius:12px; overflow:hidden; flex-shrink:0; border:1px solid rgba(0,0,0,0.08);"><img src="${normalizeAssetUrl(data.basics.profilePhoto)}" alt="Profile photo" crossorigin="anonymous" style="width:100%; height:100%; object-fit:cover; display:block;"></div>` : ''}
         </div>
       `;
 
@@ -725,8 +742,8 @@
     const PDF_PAGE = {
       widthMm: 210,
       heightMm: 297,
-      topMarginMm: 0,
-      bottomMarginMm: 0,
+      topMarginMm: 4,
+      bottomMarginMm: 4,
       widthPx: 794,
       heightPx: 1123
     };
@@ -834,7 +851,6 @@
       // Only keep larger, semantic blocks together during export.
       const selector = [
         '.section-title',
-        '.experience-item',
         '.resume-entry-avoid',
         '.skills-list',
         '.section--compact',
@@ -891,7 +907,7 @@
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: {
             mode: ['css', 'legacy'],
-            avoid: ['.header', '.section-title', '.section--compact', '.resume-entry-avoid', '.experience-item', '.exp-header', '.exp-company', '.skills-list', '.sidebar-card', '.sidebar-section']
+            avoid: ['.header', '.section-title', '.section--compact', '.resume-entry-avoid', '.exp-header', '.exp-company', '.skills-list', '.sidebar-card', '.sidebar-section']
           }
         })
         .from(element)
